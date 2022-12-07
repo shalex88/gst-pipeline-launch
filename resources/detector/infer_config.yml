@@ -1,0 +1,35 @@
+################################################################################
+# SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: LicenseRef-NvidiaProprietary
+#
+# NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+# property and proprietary rights in and to this material, related
+# documentation and any modifications thereto. Any use, reproduction,
+# disclosure or distribution of this material and related documentation
+# without an express license agreement from NVIDIA CORPORATION or
+# its affiliates is strictly prohibited.
+################################################################################
+
+property:
+  gpu-id: 0
+  net-scale-factor: 0.00392156862745098
+  model-engine-file: /home/fronti/project/video/gst-pipeline-launch/resources/detector/resnet18_trafficcamnet.engine
+  labelfile-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/labels.txt
+  int8-calib-file: /home/fronti/project/video/gst-pipeline-launch/resources/detector/cal_trt.bin
+  batch-size: 1
+  network-mode: 1
+  num-detected-classes: 4
+  interval: 0
+  gie-unique-id: 1
+  uff-input-order: 0
+  uff-input-blob-name: input_1
+  output-blob-names: output_cov/Sigmoid;output_bbox/BiasAdd
+  #scaling-filter=0
+  #scaling-compute-hw=0
+  cluster-mode: 2
+  infer-dims: 3;544;960
+
+class-attrs-all:
+  pre-cluster-threshold: 0.2
+  topk: 20
+  nms-iou-threshold: 0.5

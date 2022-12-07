@@ -1,0 +1,56 @@
+pipeline:
+  branches:
+    - name: main
+      elements:
+        - name: v4l2src
+          properties:
+            device: /dev/video0
+        - name: capsfilter
+          properties:
+            caps: video/x-raw,format=UYVY,width=1920,height=1080,framerate=30/1
+        - name: preprocessing
+          optional: true
+        - name: textoverlay
+          properties:
+            text: CAM1
+            valignment: top
+            halignment: left
+        - name: timeoverlay
+          properties:
+            valignment: top
+            halignment: right
+        - name: nvvideoconvert
+        - name: capsfilter
+          properties:
+            caps: video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080,framerate=30/1
+        - name: nvstreammux
+          properties:
+            batch-size: 1
+            width: 1920
+            height: 1080
+        - name: nvinfer
+          optional: true
+          properties:
+            config-file-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/infer_config.yml
+        - name: nvmsgconv
+          properties:
+            comp-id: 0
+            config: /home/fronti/project/video/gst-pipeline-launch/resources/message/msgconv_config.yml
+            debug-payload-dir: /home/fronti/project/video/gst-pipeline-launch/log/app
+            dummy-payload: false
+            frame-interval: 1
+            msg2p-lib: /opt/nvidia/deepstream/deepstream/lib/libnvds_msgconv.so
+            msg2p-newapi: true
+            multiple-payloads: false
+            payload-type: 0
+            qos: false
+        - name: nvvideoconvert
+          properties:
+            disable-passthrough: true
+        - name: nvdsosd
+          optional: true
+        - name: nvv4l2h264enc
+        - name: h264parse
+        - name: rtspclientsink
+          properties:
+            location: rtsp://localhost:8554/stream1
