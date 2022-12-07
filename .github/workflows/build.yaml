@@ -18,6 +18,11 @@ jobs:
       id: repo-name
       run: echo "::set-output name=value::$(echo "${{ github.repository }}" | awk -F '/' '{print $2}')"
 
+    - name: Get dependencies
+      run: apt -y install pkg-config libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \ 
+        libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+        gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
+
     - name: Configure
       run: cmake -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
