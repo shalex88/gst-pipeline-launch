@@ -1,0 +1,25 @@
+pipeline:
+  branches:
+    - name: main
+      elements:
+        - name: videotestsrc
+          properties:
+            pattern: smpte
+        - name: capsfilter
+          properties:
+            caps: video/x-raw,format=UYVY,width=1920,height=1080,framerate=30/1
+        - name: textoverlay
+          properties:
+            text: CAM2
+            valignment: top
+            halignment: left
+        - name: timeoverlay
+          properties:
+            valignment: top
+            halignment: right
+        - name: nvvidconv
+        - name: nvv4l2h264enc
+        - name: h264parse
+        - name: rtspclientsink
+          properties:
+            location: rtsp://localhost:8554/stream2

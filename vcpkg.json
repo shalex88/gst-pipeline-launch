@@ -1,0 +1,8 @@
+{
+  "dependencies": [
+    "spdlog",
+    "fmt",
+    "yaml-cpp",
+    "cxxopts"
+  ]
+}
