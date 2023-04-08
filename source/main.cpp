@@ -1,9 +1,9 @@
 #include <gst/gst.h>
 
 int main(int arg, char *argv[]) {
-    GstElement *pipeline {};
-    GstBus *bus {};
-    GstMessage *msg {};
+    GstElement *pipeline{};
+    GstBus *bus{};
+    GstMessage *msg{};
 
     g_print("Init gstreamer\n");
     gst_init(&arg, &argv);
@@ -19,7 +19,7 @@ int main(int arg, char *argv[]) {
     g_print("Wait until error or EOS\n");
     bus = gst_element_get_bus(pipeline);
     msg = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE,
-                                     static_cast<GstMessageType>(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
+                                     GstMessageType(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
 
     g_print("Free memory\n");
     if (msg) {
