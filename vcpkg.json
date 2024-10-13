@@ -1,11 +1,6 @@
 {
-  "name": "gst-example",
-  "version": "1.0.0",
   "dependencies": [
-    {
-      "name": "gstreamer",
-      "default-features": true,
-      "features": [ "plugins-good","plugins-base","plugins-ugly","x264" ]
-    }
+    "spdlog",
+    "fmt"
   ]
 }

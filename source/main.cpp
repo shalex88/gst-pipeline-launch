@@ -1,33 +1,31 @@
-#include <gst/gst.h>
+#include <memory>
+#include "Logger/Logger.h"
+#include "Gstreamer/Gstreamer.h"
 
-int main(int arg, char *argv[]) {
-    GstElement *pipeline{};
-    GstBus *bus{};
-    GstMessage *msg{};
+int main([[maybe_unused]] const int argc, [[maybe_unused]] char* argv[]) {
+    // SET_LOG_LEVEL(LoggerInterface::LogLevel::Trace);
 
-    g_print("Init gstreamer\n");
-    gst_init(&arg, &argv);
+    auto gstreamer = std::make_shared<Gstreamer>("../resources/pipeline.txt");
 
-    g_print("Build pipeline\n");
-    pipeline = gst_parse_launch(
-            "playbin uri=https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm",
-            nullptr);
+    std::thread user_input_thread([gstreamer]()  {
+        LOG_INFO("Enter 'e' to enable optional element, 'd' to disable optional element, and 'q' to quit:");
+        char command;
+        while (true) {
+            std::cin >> command;
+            if (command == 'e') {
+                gstreamer->enable_element("videoflip");
+            } else if (command == 'd') {
+                gstreamer->disable_element("videoflip");
+            } else if (command == 'q') {
+                gstreamer->stop();
+                break;
+            }
+        }
+    });
 
-    g_print("Start playing\n");
-    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+    gstreamer->play();
 
-    g_print("Wait until error or EOS\n");
-    bus = gst_element_get_bus(pipeline);
-    msg = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE,
-                                     GstMessageType(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
+    user_input_thread.join();
 
-    g_print("Free memory\n");
-    if (msg) {
-        gst_message_unref(msg);
-    }
-    gst_object_unref(bus);
-    gst_element_set_state(pipeline, GST_STATE_NULL);
-    gst_object_unref(pipeline);
-
-    return 0;
+    return EXIT_SUCCESS;
 }

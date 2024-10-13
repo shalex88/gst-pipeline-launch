@@ -1,10 +1,12 @@
+include(cmake/EnableVcpkg.cmake)
 cmake_minimum_required(VERSION 3.22)
 
 #include(cmake/vcpkg.cmake) # Currently gstreamer via vcpkg is not supported on linux
 
-project(gst-example VERSION 1.0.0 LANGUAGES CXX)
+project(gst-example LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wall -Wextra -Wpedantic)
@@ -16,9 +18,11 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
+find_package(spdlog CONFIG REQUIRED)
 
 include_directories(
     include
+    source
     ${GLIB_INCLUDE_DIRS}
     ${GSTREAMER_INCLUDE_DIRS}
 )
@@ -34,4 +38,5 @@ add_executable(${PROJECT_NAME} ${sourceFiles})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${GSTREAMER_LIBRARIES}
+    spdlog::spdlog
 )
