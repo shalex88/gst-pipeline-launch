@@ -10,6 +10,7 @@ Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipel
     // Create pipeline elements
     pipeline_ = gst_pipeline_new("runtime-control-pipeline");
     pipeline_elements_ = get_pipeline_elements(pipeline_file_);
+    optional_pipeline_elements_ = get_optional_pipeline_elements(pipeline_file_);
 
     gst_elements.reserve(pipeline_elements_.size());
 
@@ -129,9 +130,31 @@ int Gstreamer::disable_element(const std::string& element_name) {
     return EXIT_SUCCESS;
 }
 
-std::vector<std::string> Gstreamer::get_pipeline_elements(const std::string& file_path) { // TODO: make agnostic to how elements are stored
+int Gstreamer::enable_optional_pipeline_elements() {
+    for (const auto& element : optional_pipeline_elements_) {
+        enable_element(element);
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int Gstreamer::disable_optional_pipeline_elements() {
+    for (const auto& element : optional_pipeline_elements_) {
+        disable_element(element);
+    }
+
+    return EXIT_SUCCESS;
+}
+
+std::vector<std::string> Gstreamer::get_pipeline_elements(const std::string& file_path) {
     const auto file = std::make_unique<File>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
 
-    return file->get_vector_of_lines();
+    return file->get_non_optional_elements();
+}
+
+std::vector<std::string> Gstreamer::get_optional_pipeline_elements(const std::string& file_path) {
+    const auto file = std::make_unique<File>(file_path);
+
+    return file->get_optional_elements();
 }

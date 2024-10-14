@@ -1,0 +1,26 @@
+{
+  "pipeline": {
+    "elements": [
+      {
+        "name": "videotestsrc",
+        "type": "source",
+        "optional": false
+      },
+      {
+        "name": "timeoverlay",
+        "type": "filter",
+        "optional": false
+      },
+      {
+        "name": "videoflip",
+        "type": "filter",
+        "optional": true
+      },
+      {
+        "name": "autovideosink",
+        "type": "sink",
+        "optional": false
+      }
+    ]
+  }
+}
