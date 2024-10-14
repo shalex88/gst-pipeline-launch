@@ -21,6 +21,10 @@ protected:
         if (level >= log_level_) {
             std::cout << "[" << toSpdLogLevel(level) << "] " << msg << std::endl;
         }
+
+        if (level == LogLevel::Error || level == LogLevel::Critical) {
+            throw std::runtime_error(msg);
+        }
     }
 
 private:

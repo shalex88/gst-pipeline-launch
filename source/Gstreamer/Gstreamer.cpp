@@ -7,8 +7,11 @@ Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipel
     LOG_DEBUG("Init gstreamer");
     gst_init(nullptr, nullptr);
 
-    // Create pipeline elements
     pipeline_ = gst_pipeline_new("runtime-control-pipeline");
+    if (!pipeline_) {
+        LOG_ERROR("Failed to create pipeline");
+    }
+
     pipeline_elements_ = get_pipeline_elements(pipeline_file_);
     optional_pipeline_elements_ = get_optional_pipeline_elements(pipeline_file_);
 
@@ -16,17 +19,11 @@ Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipel
 
     for (const auto& element : pipeline_elements_) {
         LOG_INFO("Enable element: {}", element);
-        gst_elements.emplace_back(gst_element_factory_make(element.c_str(), element.c_str()));
-    }
-
-    if (!pipeline_) {
-        LOG_ERROR("Failed to create pipeline");
-    }
-
-    for (const auto& element : gst_elements) {
-        if (!element) {
-            LOG_ERROR("Failed to create pipeline element {}", gst_element_get_name(element));
+        auto element_ptr = gst_element_factory_make(element.c_str(), element.c_str());
+        if (!element_ptr) {
+            LOG_ERROR("Failed to create pipeline element {}", element);
         }
+        gst_elements.emplace_back(element_ptr);
     }
 
     for (const auto& element : gst_elements) {
@@ -65,16 +62,14 @@ void Gstreamer::stop() const {
     g_main_loop_unref(loop_);
 }
 
-int Gstreamer::enable_element(const std::string& element_name) {
+void Gstreamer::enable_element(const std::string& element_name) {
     LOG_INFO("Enable element: {}", element_name);
 
     if (!optional_element_) {
-        // Create the optional_element_ element
         optional_element_ = gst_element_factory_make(element_name.c_str(), element_name.c_str());
 
         if (!optional_element_) {
             LOG_ERROR("Failed to create pipeline element {}", element_name);
-            return EXIT_FAILURE;
         }
 
         // TODO: these properties depend on the element
@@ -91,13 +86,10 @@ int Gstreamer::enable_element(const std::string& element_name) {
         gst_element_sync_state_with_parent(optional_element_);
     } else {
         LOG_WARN("Element {} is already enabled", element_name);
-        return EXIT_FAILURE;
     }
-
-    return EXIT_SUCCESS;
 }
 
-int Gstreamer::disable_element(const std::string& element_name) {
+void Gstreamer::disable_element(const std::string& element_name) {
     LOG_INFO("Disable element: {}", element_name);
 
     if (optional_element_) {
@@ -124,10 +116,7 @@ int Gstreamer::disable_element(const std::string& element_name) {
         gst_object_unref(src_pad);
     } else {
         LOG_WARN("Element {} is not enabled", element_name);
-        return EXIT_FAILURE;
     }
-
-    return EXIT_SUCCESS;
 }
 
 int Gstreamer::enable_optional_pipeline_elements() {

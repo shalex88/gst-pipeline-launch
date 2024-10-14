@@ -18,8 +18,10 @@ private:
     GstElement* optional_element_ = nullptr;
     std::vector<std::string> get_pipeline_elements(const std::string& file_path);
     std::vector<std::string> get_optional_pipeline_elements(const std::string& file_path);
-    int enable_element(const std::string& element_name);
-    int disable_element(const std::string& element_name);
+
+    void enable_element(const std::string& element_name);
+
+    void disable_element(const std::string& element_name);
     std::string pipeline_file_;
     std::vector<std::string> pipeline_elements_;
     std::vector<std::string> optional_pipeline_elements_;
