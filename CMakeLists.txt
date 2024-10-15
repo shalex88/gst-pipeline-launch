@@ -1,36 +1,19 @@
 include(cmake/EnableVcpkg.cmake)
 cmake_minimum_required(VERSION 3.22)
 
-#include(cmake/vcpkg.cmake) # Currently gstreamer via vcpkg is not supported on linux
-
 project(gst-example LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-Wall -Wextra -Wpedantic)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/W3)
-else()
-    message(WARNING "Unknown Compiler ${CMAKE_CXX_COMPILER_ID}")
-endif()
-
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
+pkg_search_module(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-1.0)
 find_package(spdlog CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 include_directories(
     include
     source
-    ${GLIB_INCLUDE_DIRS}
-    ${GSTREAMER_INCLUDE_DIRS}
-)
-
-link_directories(
-    ${GLIB_LIBRARY_DIRS}
-    ${GSTREAMER_LIBRARY_DIRS}
 )
 
 file(GLOB_RECURSE sourceFiles CONFIGURE_DEPENDS "source/*.cpp")
@@ -38,7 +21,7 @@ file(GLOB_RECURSE sourceFiles CONFIGURE_DEPENDS "source/*.cpp")
 add_executable(${PROJECT_NAME} ${sourceFiles})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${GSTREAMER_LIBRARIES}
+    PkgConfig::GSTREAMER
     spdlog::spdlog
     nlohmann_json::nlohmann_json
 )
