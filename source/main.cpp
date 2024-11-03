@@ -3,7 +3,7 @@
 #include "Gstreamer/Gstreamer.h"
 
 int main([[maybe_unused]] const int argc, [[maybe_unused]] char* argv[]) {
-    // SET_LOG_LEVEL(LoggerInterface::LogLevel::Trace);
+    SET_LOG_LEVEL(LoggerInterface::LogLevel::Trace);
 
     auto gstreamer = std::make_shared<Gstreamer>("../resources/pipeline.json");
 

@@ -4,21 +4,25 @@
       {
         "name": "videotestsrc",
         "type": "source",
+        "caps": "",
         "optional": false
       },
       {
         "name": "timeoverlay",
         "type": "filter",
+        "caps": "",
         "optional": false
       },
       {
-        "name": "videoflip",
+        "name": "metadataextractor",
         "type": "filter",
+        "caps": "",
         "optional": true
       },
       {
         "name": "autovideosink",
         "type": "sink",
+        "caps": "",
         "optional": false
       }
     ]

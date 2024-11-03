@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <string>
+#include "Gstreamer/PipelineElement.h"
 #include "Logger/Logger.h"
 
 class File {
@@ -11,8 +12,7 @@ public:
     ~File();
     std::string get_line();
     std::vector<std::string> get_vector_of_lines();
-    std::vector<std::string> get_non_optional_elements();
-    std::vector<std::string> get_optional_elements();
+    std::ifstream get_content();
 private:
     std::ifstream file_;
 };

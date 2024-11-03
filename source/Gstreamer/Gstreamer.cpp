@@ -1,5 +1,5 @@
 #include <utility>
-#include "File/File.h"
+#include "Gstreamer/PipelineHandler.h"
 #include "Gstreamer.h"
 
 Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipeline_file)){
@@ -12,16 +12,18 @@ Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipel
         LOG_ERROR("Failed to create pipeline");
     }
 
-    pipeline_elements_ = get_pipeline_elements(pipeline_file_);
-    optional_pipeline_elements_ = get_optional_pipeline_elements(pipeline_file_);
+    create_element_objects(pipeline_file_);
 
-    gst_elements.reserve(pipeline_elements_.size());
+    default_pipeline_elements_ = get_default_pipeline_elements();
+    optional_pipeline_elements_ = get_optional_pipeline_elements();
 
-    for (const auto& element : pipeline_elements_) {
-        LOG_INFO("Enable element: {}", element);
-        auto element_ptr = gst_element_factory_make(element.c_str(), element.c_str());
+    gst_elements.reserve(default_pipeline_elements_.size());
+
+    for (const auto& element : default_pipeline_elements_) {
+        LOG_INFO("Enable element: {}", element.name);
+        auto element_ptr = gst_element_factory_make(element.name.c_str(), element.name.c_str());
         if (!element_ptr) {
-            LOG_ERROR("Failed to create pipeline element {}", element);
+            LOG_ERROR("Failed to create pipeline element {}", element.name);
         }
         gst_elements.emplace_back(element_ptr);
     }
@@ -62,66 +64,68 @@ void Gstreamer::stop() const {
     g_main_loop_unref(loop_);
 }
 
-void Gstreamer::enable_element(const std::string& element_name) {
-    LOG_INFO("Enable element: {}", element_name);
-
-    if (!optional_element_) {
-        optional_element_ = gst_element_factory_make(element_name.c_str(), element_name.c_str());
-
-        if (!optional_element_) {
-            LOG_ERROR("Failed to create pipeline element {}", element_name);
-        }
-
-        // TODO: these properties depend on the element
-        g_object_set(optional_element_, "method", 1, NULL); // videoflip. Flip horizontally
-        // g_object_set(optional_element_, "hue", 0.5, NULL); // Adjust hue
-
-        // Add the optional_element_ element to the pipeline
-        gst_bin_add(GST_BIN(pipeline_), optional_element_);
-
-        // Unlink timeoverlay from sink, insert optional_element_
-        gst_element_unlink(gst_elements[gst_elements.size() - 2], gst_elements.back());
-        gst_element_link_many(gst_elements[gst_elements.size() - 2], optional_element_ , gst_elements.back(), NULL);
-
-        gst_element_sync_state_with_parent(optional_element_);
-    } else {
-        LOG_WARN("Element {} is already enabled", element_name);
+PipelineElement* Gstreamer::find_element(const std::string& element_name) {
+    auto it = std::find_if(all_pipeline_elements_.begin(), all_pipeline_elements_.end(),
+                           [&element_name](const PipelineElement& element) {
+                               return element.name == element_name;
+                           });
+    if (it != all_pipeline_elements_.end()) {
+        return &(*it);
     }
+
+    return nullptr;
 }
 
-void Gstreamer::disable_element(const std::string& element_name) {
-    LOG_INFO("Disable element: {}", element_name);
+void Gstreamer::enable_element(const PipelineElement& element) {
+    LOG_INFO("Enable element: {}", element.name);
 
-    if (optional_element_) {
-        gst_element_set_state(optional_element_, GST_STATE_NULL);
-
-        GstPad *src_pad = gst_element_get_static_pad(optional_element_, "src");
-        GstPad *sink_pad = gst_element_get_static_pad(optional_element_, "sink");
-
-        // Block pads to unlink the optional_element_ safely
-        gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, nullptr, nullptr, nullptr);
-        gst_pad_add_probe(src_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, nullptr, nullptr, nullptr);
-
-        // Unlink and remove the optional_element_ element
-        gst_element_unlink(gst_elements[gst_elements.size() - 2], optional_element_);
-        gst_element_unlink(optional_element_, gst_elements.back());
-        gst_bin_remove(GST_BIN(pipeline_), optional_element_);
-        optional_element_ = nullptr;
-
-        // Re-link timeoverlay directly to sink
-        gst_element_link(gst_elements[gst_elements.size() - 2], gst_elements.back());
-
-        // Release the pads
-        gst_object_unref(sink_pad);
-        gst_object_unref(src_pad);
-    } else {
-        LOG_WARN("Element {} is not enabled", element_name);
+    const auto current_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
+    if (!current_element) {
+        LOG_ERROR("Failed to create pipeline element {}", element.name);
     }
+
+    gst_bin_add(GST_BIN(pipeline_), current_element);
+
+    auto priveous_element = gst_bin_get_by_name(GST_BIN(pipeline_), all_pipeline_elements_[element.id - 1].name.c_str());
+    auto next_element = gst_bin_get_by_name(GST_BIN(pipeline_), all_pipeline_elements_[element.id + 1].name.c_str());
+
+    gst_element_unlink(priveous_element, next_element);
+    gst_element_link_many(priveous_element, current_element , next_element, NULL);
+
+    gst_element_sync_state_with_parent(current_element);
+}
+
+void Gstreamer::disable_element(const PipelineElement& element) {
+    LOG_INFO("Disable element: {}", element.name);
+
+    auto current_element = gst_bin_get_by_name(GST_BIN(pipeline_), all_pipeline_elements_[element.id].name.c_str());
+
+    gst_element_set_state(current_element, GST_STATE_NULL);
+
+    GstPad *src_pad = gst_element_get_static_pad(current_element, "src");
+    GstPad *sink_pad = gst_element_get_static_pad(current_element, "sink");
+
+    // Block pads to unlink the optional_element_ safely
+    gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, nullptr, nullptr, nullptr);
+    gst_pad_add_probe(src_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, nullptr, nullptr, nullptr);
+
+    auto priveous_element = gst_bin_get_by_name(GST_BIN(pipeline_), all_pipeline_elements_[element.id - 1].name.c_str());
+    auto next_element = gst_bin_get_by_name(GST_BIN(pipeline_), all_pipeline_elements_[element.id + 1].name.c_str());
+
+    gst_element_unlink(priveous_element, current_element);
+    gst_element_unlink(current_element, next_element);
+    gst_bin_remove(GST_BIN(pipeline_), current_element);
+
+    gst_element_link(priveous_element, next_element);
+
+    // Release the pads
+    gst_object_unref(sink_pad);
+    gst_object_unref(src_pad);
 }
 
 int Gstreamer::enable_optional_pipeline_elements() {
     for (const auto& element : optional_pipeline_elements_) {
-        enable_element(element);
+        enable_element(*find_element(element.name));
     }
 
     return EXIT_SUCCESS;
@@ -129,21 +133,35 @@ int Gstreamer::enable_optional_pipeline_elements() {
 
 int Gstreamer::disable_optional_pipeline_elements() {
     for (const auto& element : optional_pipeline_elements_) {
-        disable_element(element);
+        disable_element(*find_element(element.name));
     }
 
     return EXIT_SUCCESS;
 }
 
-std::vector<std::string> Gstreamer::get_pipeline_elements(const std::string& file_path) {
-    const auto file = std::make_unique<File>(file_path);
+void Gstreamer::create_element_objects(const std::string& file_path) {
+    const auto pipeline_handler = std::make_unique<PipelineHandler>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
 
-    return file->get_non_optional_elements();
+    all_pipeline_elements_ = pipeline_handler->get_all_elements();
 }
 
-std::vector<std::string> Gstreamer::get_optional_pipeline_elements(const std::string& file_path) {
-    const auto file = std::make_unique<File>(file_path);
+std::vector<PipelineElement> Gstreamer::get_default_pipeline_elements() {
+    for (const auto& element: all_pipeline_elements_) {
+        if (element.optional == false) {
+            default_pipeline_elements_.emplace_back(element);
+        }
+    }
 
-    return file->get_optional_elements();
+    return default_pipeline_elements_;
+}
+
+std::vector<PipelineElement> Gstreamer::get_optional_pipeline_elements() {
+    for (const auto& element: all_pipeline_elements_) {
+        if (element.optional == true) {
+            optional_pipeline_elements_.emplace_back(element);
+        }
+    }
+
+    return optional_pipeline_elements_;
 }

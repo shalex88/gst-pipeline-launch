@@ -29,30 +29,6 @@ std::vector<std::string> File::get_vector_of_lines() {
     return lines;
 }
 
-std::vector<std::string> File::get_non_optional_elements() {
-    nlohmann::json json_data;
-    file_ >> json_data;
-
-    std::vector<std::string> non_optional_elements;
-    for (const auto& element : json_data["pipeline"]["elements"]) {
-        if (!element["optional"].get<bool>()) {
-            non_optional_elements.push_back(element["name"].get<std::string>());
-        }
-    }
-
-    return non_optional_elements;
-}
-
-std::vector<std::string> File::get_optional_elements() {
-    nlohmann::json json_data;
-    file_ >> json_data;
-
-    std::vector<std::string> optional_elements;
-    for (const auto& element : json_data["pipeline"]["elements"]) {
-        if (element["optional"].get<bool>()) {
-            optional_elements.push_back(element["name"].get<std::string>());
-        }
-    }
-
-    return optional_elements;
+std::ifstream File::get_content() {
+    return std::move(file_); //TODO: copy instead of move
 }
