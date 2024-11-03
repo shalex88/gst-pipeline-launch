@@ -16,17 +16,18 @@ public:
 private:
     GstElement *pipeline_ = nullptr;
     GMainLoop *loop_ = nullptr;
-    void create_element_objects(const std::string& file_path);
-    PipelineElement* find_element(const std::string& element_name);
-    std::vector<PipelineElement> get_default_pipeline_elements();
-    std::vector<PipelineElement> get_optional_pipeline_elements();
-    void enable_element(const PipelineElement& element);
-    void disable_element(const PipelineElement& element);
+
+    std::vector<PipelineElement> create_element_objects(const std::string& file_path);
+    std::vector<PipelineElement> init_default_pipeline_elements();
+    GstElement* get_previous_running_gst_element(const PipelineElement& element);
+    GstElement* get_next_gst_element(const PipelineElement& element);
+    void enable_element(PipelineElement& element);
+    void disable_element(PipelineElement& element);
     std::string pipeline_file_;
-    std::vector<PipelineElement> all_pipeline_elements_;
-    std::vector<PipelineElement> default_pipeline_elements_;
-    std::vector<PipelineElement> optional_pipeline_elements_;
-    std::vector<GstElement*> gst_elements;
+    std::vector<PipelineElement> user_pipeline_elements_;
+    std::vector<PipelineElement> running_pipeline_elements_;
+    std::vector<GstElement*> running_gst_elements;
+    mutable std::mutex mutex_;
 };
 
 #include "Logger/Logger.h"

@@ -22,6 +22,7 @@ std::vector<PipelineElement> PipelineHandler::get_all_elements() {
             element["type"].get<std::string>(),
             element["caps"].get<std::string>(),
             element["optional"].get<bool>(),
+            false
             }
             );
     }

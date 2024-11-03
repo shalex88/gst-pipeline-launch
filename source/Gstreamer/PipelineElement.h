@@ -9,6 +9,7 @@ struct {
     std::string type;
     std::string caps;
     bool optional;
+    bool enabled;
 } typedef PipelineElement;
 
 #endif //PIPELINEELEMENT_H
