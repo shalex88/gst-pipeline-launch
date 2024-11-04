@@ -5,31 +5,38 @@
         "name": "videotestsrc",
         "type": "source",
         "caps": "",
-        "optional": false
+        "optional": false,
+        "properties": {
+          "pattern": "smpte"
+        }
       },
       {
         "name": "timeoverlay",
         "type": "filter",
         "caps": "",
-        "optional": false
+        "optional": false,
+        "properties": {}
       },
       {
         "name": "metadatainjector",
         "type": "filter",
         "caps": "",
-        "optional": true
+        "optional": true,
+        "properties": {}
       },
       {
         "name": "metadataextractor",
         "type": "filter",
         "caps": "",
-        "optional": true
+        "optional": true,
+        "properties": {}
       },
       {
         "name": "autovideosink",
         "type": "sink",
         "caps": "",
-        "optional": false
+        "optional": false,
+        "properties": {}
       }
     ]
   }

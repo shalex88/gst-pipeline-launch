@@ -1,6 +1,7 @@
 #ifndef PIPELINEELEMENT_H
 #define PIPELINEELEMENT_H
 
+#include <map>
 #include <string>
 
 struct {
@@ -8,6 +9,7 @@ struct {
     std::string name;
     std::string type;
     std::string caps;
+    std::map<std::string, std::string> properties;
     bool optional;
     bool enabled;
 } typedef PipelineElement;

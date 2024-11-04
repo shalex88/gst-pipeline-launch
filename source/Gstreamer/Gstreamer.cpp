@@ -25,6 +25,11 @@ Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipel
             if (!element_ptr) {
                 LOG_ERROR("Failed to create pipeline element {}", element.name);
             }
+
+            for (const auto& [key, value] : element.properties) {
+                gst_util_set_object_arg(G_OBJECT(element_ptr), key.c_str(),  value.c_str());
+            }
+
             running_gst_elements.emplace_back(element_ptr);
         }
     }
@@ -50,22 +55,34 @@ void Gstreamer::play() {
     LOG_INFO("Start playing");
     gst_element_set_state(pipeline_, GST_STATE_PLAYING);
 
+    // Add a bus watch to listen for EOS
+    GstBus* bus = gst_element_get_bus(pipeline_);
+    gst_bus_add_watch(bus, [](GstBus* bus, GstMessage* message, gpointer data) -> gboolean {
+        if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_EOS) {
+            static_cast<Gstreamer*>(data)->stop();
+        }
+        return TRUE;
+    }, this);
+    gst_object_unref(bus);
+
     // Start the main loop in a new thread
     loop_ = g_main_loop_new(nullptr, FALSE);
 
     g_main_loop_run(loop_);
 }
 
-void Gstreamer::stop() const {
+void Gstreamer::stop() {
     LOG_INFO("Stop playing");
     g_main_loop_quit(loop_);
 
     gst_element_set_state(pipeline_, GST_STATE_NULL);
     gst_object_unref(pipeline_);
     g_main_loop_unref(loop_);
+
+    is_finished_ = true;
 }
 
-GstElement* Gstreamer::get_previous_running_gst_element(const PipelineElement& element) {
+GstElement* Gstreamer::get_previous_running_gst_element(const PipelineElement& element) const {
     for (auto i = element.id - 1; i != running_pipeline_elements_.size(); --i) {
         if (running_pipeline_elements_.at(i).enabled) {
             return gst_bin_get_by_name(GST_BIN(pipeline_), running_pipeline_elements_.at(i).name.c_str());
@@ -75,7 +92,7 @@ GstElement* Gstreamer::get_previous_running_gst_element(const PipelineElement& e
     return nullptr;
 }
 
-GstElement* Gstreamer::get_next_gst_element(const PipelineElement& element) {
+GstElement* Gstreamer::get_next_gst_element(const PipelineElement& element) const {
     for (auto i = element.id + 1; i != running_pipeline_elements_.size(); ++i) {
         if (running_pipeline_elements_.at(i).enabled) {
             return gst_bin_get_by_name(GST_BIN(pipeline_), running_pipeline_elements_.at(i).name.c_str());
@@ -182,6 +199,10 @@ int Gstreamer::disable_optional_pipeline_elements() {
     return EXIT_SUCCESS;
 }
 
+bool Gstreamer::is_running() const {
+    return !is_finished_;
+}
+
 std::vector<PipelineElement> Gstreamer::create_element_objects(const std::string& file_path) {
     const auto pipeline_handler = std::make_unique<PipelineHandler>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
@@ -197,6 +218,7 @@ std::vector<PipelineElement> Gstreamer::init_default_pipeline_elements() {
                     .name = element.name,
                     .type = element.type,
                     .caps = element.caps,
+                    .properties = element.properties,
                     .optional = element.optional,
                     .enabled = true
             });
@@ -206,6 +228,7 @@ std::vector<PipelineElement> Gstreamer::init_default_pipeline_elements() {
                     .name = element.name,
                     .type = element.type,
                     .caps = element.caps,
+                    .properties = element.properties,
                     .optional = element.optional,
                     .enabled = false
             });
