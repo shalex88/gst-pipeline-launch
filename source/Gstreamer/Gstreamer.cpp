@@ -5,6 +5,7 @@
 Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipeline_file)) {
     LOG_TRACE("Gstreamer constructor");
     LOG_DEBUG("Init gstreamer");
+
     gst_init(nullptr, nullptr);
 
     pipeline_ = gst_pipeline_new("runtime-control-pipeline");
@@ -155,8 +156,12 @@ void Gstreamer::disable_element(PipelineElement& element) {
 
 int Gstreamer::enable_optional_pipeline_elements() {
     for (auto& element: running_pipeline_elements_) {
-        if (!element.enabled && element.optional) {
-            enable_element(element);
+        if (element.optional) {
+            if (!element.enabled) {
+                enable_element(element);
+            } else {
+                LOG_WARN("Element {} is already enabled", element.name);
+            }
         }
     }
 
@@ -165,8 +170,12 @@ int Gstreamer::enable_optional_pipeline_elements() {
 
 int Gstreamer::disable_optional_pipeline_elements() {
     for (auto& element: running_pipeline_elements_) {
-        if (element.enabled && element.optional) {
-            disable_element(element);
+        if (element.optional) {
+            if (element.enabled) {
+                disable_element(element);
+            } else {
+                LOG_WARN("Element {} is already disabled", element.name);
+            }
         }
     }
 

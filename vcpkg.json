@@ -2,6 +2,7 @@
   "dependencies": [
     "spdlog",
     "fmt",
-    "nlohmann-json"
+    "nlohmann-json",
+    "cxxopts"
   ]
 }
