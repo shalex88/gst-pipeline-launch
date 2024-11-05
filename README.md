@@ -10,10 +10,4 @@ sudo apt -y install pkg-config libgstreamer1.0-dev
 
 # Install gstreamer via vcpkg (not working, gst_element_factory_make() returns NULL)
 sudo apt -y install pkg-config bison flex nasm 
-``` 
-
-# TODO
-
-* Enable/disable specific elements
-* Support multiple sinks
-* Integrate metadata and extract it
+```

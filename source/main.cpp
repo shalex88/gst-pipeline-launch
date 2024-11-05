@@ -59,9 +59,8 @@ void user_input_thread(const std::shared_ptr<Gstreamer>& gstreamer, std::atomic<
     LOG_INFO("Enter 'e' to enable optional element, 'd' to disable optional element, and 'q' to quit:");
 
     while (keep_running) {
-        if (std::cin.rdbuf()->in_avail() > 0) {
             char command = 0;
-            std::cin >> command;
+            std::cin >> command; // FIXME: Blocking call
 
             switch (command) {
                 case 'e':
@@ -75,14 +74,12 @@ void user_input_thread(const std::shared_ptr<Gstreamer>& gstreamer, std::atomic<
                 case 'q':
                     gstreamer->stop();
                     keep_running = false;  // Signal to stop the thread
-                    LOG_INFO("Stopping pipeline and exiting.");
+                    LOG_INFO("Stopped pipeline and exiting.");
                     return;
                 default:
                     LOG_WARN("Invalid command. Use 'e', 'd', or 'q'.");
                     break;
             }
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Prevent busy-waiting
     }
 }
 
@@ -97,7 +94,7 @@ int main(const int argc, const char* argv[]) {
 
         std::thread input_thread(user_input_thread, gstreamer, std::ref(keep_running));
 
-        gstreamer->play();
+        gstreamer->play(); // Blocking call
 
         keep_running = false; // Signal the input thread to stop once play() returns
         input_thread.join();
