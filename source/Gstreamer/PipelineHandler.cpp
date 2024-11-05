@@ -9,7 +9,7 @@ PipelineHandler::~PipelineHandler() {
     LOG_TRACE("PipelineHandler destructor");
 }
 
-std::vector<PipelineElement> PipelineHandler::get_all_elements() {
+std::vector<PipelineElement> PipelineHandler::get_all_elements() const {
     nlohmann::json json_data;
     file_->get_content() >> json_data;
 

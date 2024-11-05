@@ -22,8 +22,8 @@ private:
     std::vector<PipelineElement> init_default_pipeline_elements();
     GstElement* get_previous_running_gst_element(const PipelineElement& element) const;
     GstElement* get_next_gst_element(const PipelineElement& element) const;
-    void enable_element(PipelineElement& element);
-    void disable_element(PipelineElement& element);
+    void enable_element(PipelineElement& element) const;
+    void disable_element(PipelineElement& element) const;
     std::string pipeline_file_;
     std::vector<PipelineElement> user_pipeline_elements_;
     std::vector<PipelineElement> running_pipeline_elements_;

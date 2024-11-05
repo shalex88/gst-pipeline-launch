@@ -10,7 +10,7 @@ class PipelineHandler {
 public:
     explicit PipelineHandler(const std::string& file_name);
     ~PipelineHandler();
-    std::vector<PipelineElement> get_all_elements();
+    std::vector<PipelineElement> get_all_elements() const;
 private:
     std::unique_ptr<File> file_;
 };

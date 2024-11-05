@@ -57,7 +57,7 @@ void Gstreamer::play() {
 
     // Add a bus watch to listen for EOS
     GstBus* bus = gst_element_get_bus(pipeline_);
-    gst_bus_add_watch(bus, [](GstBus* bus, GstMessage* message, gpointer data) -> gboolean {
+    gst_bus_add_watch(bus, [](GstBus*, GstMessage* message, const gpointer data) -> gboolean {
         if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_EOS) {
             static_cast<Gstreamer*>(data)->stop();
         }
@@ -102,22 +102,22 @@ GstElement* Gstreamer::get_next_gst_element(const PipelineElement& element) cons
         return nullptr;
 }
 
-void Gstreamer::enable_element(PipelineElement& element) {
-    std::lock_guard<std::mutex> lock_guard(mutex_);
+void Gstreamer::enable_element(PipelineElement& element) const {
+    std::lock_guard lock_guard(mutex_);
 
     LOG_INFO("Enable element: {}", element.name);
 
-    auto current_gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
+    const auto current_gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
     if (!current_gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
     }
 
-    auto priveous_gst_element = get_previous_running_gst_element(element);
+    const auto priveous_gst_element = get_previous_running_gst_element(element);
     if (!priveous_gst_element) {
         LOG_ERROR("Could not find previous element");
     }
 
-    auto next_gst_element = get_next_gst_element(element);
+    const auto next_gst_element = get_next_gst_element(element);
     if (!next_gst_element) {
         LOG_ERROR("Could not find next element");
     }
@@ -132,12 +132,13 @@ void Gstreamer::enable_element(PipelineElement& element) {
     element.enabled = true;
 }
 
-void Gstreamer::disable_element(PipelineElement& element) {
-    std::lock_guard<std::mutex> lock_guard(mutex_);
+void Gstreamer::disable_element(PipelineElement& element) const {
+    std::lock_guard lock_guard(mutex_);
 
     LOG_INFO("Disable element: {}", element.name);
 
-    auto current_element = gst_bin_get_by_name(GST_BIN(pipeline_), user_pipeline_elements_[element.id].name.c_str());
+    const auto current_element = gst_bin_get_by_name(GST_BIN(pipeline_),
+        user_pipeline_elements_[element.id].name.c_str());
 
     gst_element_set_state(current_element, GST_STATE_NULL);
 
@@ -148,12 +149,12 @@ void Gstreamer::disable_element(PipelineElement& element) {
     gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, nullptr, nullptr, nullptr);
     gst_pad_add_probe(src_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, nullptr, nullptr, nullptr);
 
-    auto priveous_gst_element = get_previous_running_gst_element(element);
+    const auto priveous_gst_element = get_previous_running_gst_element(element);
     if (!priveous_gst_element) {
         LOG_ERROR("Could not find previous element");
     }
 
-    auto next_gst_element = get_next_gst_element(element);
+    const auto next_gst_element = get_next_gst_element(element);
     if (!next_gst_element) {
         LOG_ERROR("Could not find next element");
     }
