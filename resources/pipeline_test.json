@@ -1,0 +1,23 @@
+{
+  "pipeline": {
+    "elements": [
+      {
+        "name": "videotestsrc",
+        "type": "source",
+        "caps": "",
+        "optional": false,
+        "properties": {
+          "pattern": "smpte",
+          "num-buffers": "50"
+        }
+      },
+      {
+        "name": "autovideosink",
+        "type": "sink",
+        "caps": "",
+        "optional": false,
+        "properties": {}
+      }
+    ]
+  }
+}
