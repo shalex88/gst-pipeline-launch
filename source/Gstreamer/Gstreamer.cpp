@@ -91,12 +91,18 @@ void Gstreamer::play() {
 }
 
 void Gstreamer::stop() {
-    LOG_INFO("Stop playing");
-    g_main_loop_quit(gst_loop_);
+    if (gst_pipeline_ && gst_loop_) {
+        LOG_INFO("Stop playing");
+        g_main_loop_quit(gst_loop_);
 
-    gst_element_set_state(gst_pipeline_, GST_STATE_NULL);
-    gst_object_unref(gst_pipeline_);
-    g_main_loop_unref(gst_loop_);
+        gst_element_set_state(gst_pipeline_, GST_STATE_NULL);
+        gst_object_unref(gst_pipeline_);
+        g_main_loop_unref(gst_loop_);
+        gst_loop_ = nullptr;
+        gst_pipeline_ = nullptr;
+    } else {
+        LOG_WARN("No stream playing");
+    }
 }
 
 PipelineElement Gstreamer::get_previous_enabled_element(const PipelineElement& element) const {
