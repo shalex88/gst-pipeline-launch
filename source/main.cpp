@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <thread>
 #include <chrono>
+#include <sys/select.h>
+#include <unistd.h>
 #include "Logger/Logger.h"
 #include "Gstreamer/Gstreamer.h"
 #include "cxxopts.hpp"
@@ -59,31 +61,39 @@ void user_input_thread(const std::shared_ptr<Gstreamer>& gstreamer, std::atomic<
     LOG_INFO("Enter 'e' to enable optional element, 'd' to disable optional element, and 'q' to quit:");
 
     while (keep_running) {
-        if (std::cin.rdbuf()->in_avail() > 0) {
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(STDIN_FILENO, &read_fds);
+
+        struct timeval timeout;
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 100000; // 100 milliseconds
+
+        int result = select(STDIN_FILENO + 1, &read_fds, nullptr, nullptr, &timeout);
+
+        if (result > 0 && FD_ISSET(STDIN_FILENO, &read_fds)) {
             char command = 0;
-            std::cin >> command; // FIXME: Blocking call
+            std::cin >> command;
 
             switch (command) {
                 case 'e':
                     gstreamer->enable_optional_pipeline_elements();
-                LOG_INFO("Enabled optional pipeline elements.");
-                break;
+                    LOG_INFO("Enabled optional pipeline elements.");
+                    break;
                 case 'd':
                     gstreamer->disable_optional_pipeline_elements();
-                LOG_INFO("Disabled optional pipeline elements.");
-                break;
+                    LOG_INFO("Disabled optional pipeline elements.");
+                    break;
                 case 'q':
                     gstreamer->stop();
-                keep_running = false;  // Signal to stop the thread
-                LOG_INFO("Stopped pipeline and exiting.");
-                return;
+                    keep_running = false;  // Signal to stop the thread
+                    LOG_INFO("Stopped pipeline and exiting.");
+                    return;
                 default:
                     LOG_WARN("Invalid command. Use 'e', 'd', or 'q'.");
-                break;
+                    break;
             }
         }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Prevent busy-waiting
     }
 }
 
