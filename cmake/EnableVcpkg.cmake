@@ -6,4 +6,5 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(vcpkg)
 
+set(ENV{VCPKG_FORCE_SYSTEM_BINARIES} 1)
 set(CMAKE_TOOLCHAIN_FILE "${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
