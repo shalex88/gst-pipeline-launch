@@ -59,33 +59,39 @@ void user_input_thread(const std::shared_ptr<Gstreamer>& gstreamer, std::atomic<
     LOG_INFO("Enter 'e' to enable optional element, 'd' to disable optional element, and 'q' to quit:");
 
     while (keep_running) {
+        if (std::cin.rdbuf()->in_avail() > 0) {
             char command = 0;
             std::cin >> command; // FIXME: Blocking call
 
             switch (command) {
                 case 'e':
                     gstreamer->enable_optional_pipeline_elements();
-                    LOG_INFO("Enabled optional pipeline elements.");
-                    break;
+                LOG_INFO("Enabled optional pipeline elements.");
+                break;
                 case 'd':
                     gstreamer->disable_optional_pipeline_elements();
-                    LOG_INFO("Disabled optional pipeline elements.");
-                    break;
+                LOG_INFO("Disabled optional pipeline elements.");
+                break;
                 case 'q':
                     gstreamer->stop();
-                    keep_running = false;  // Signal to stop the thread
-                    LOG_INFO("Stopped pipeline and exiting.");
-                    return;
+                keep_running = false;  // Signal to stop the thread
+                LOG_INFO("Stopped pipeline and exiting.");
+                return;
                 default:
                     LOG_WARN("Invalid command. Use 'e', 'd', or 'q'.");
-                    break;
+                break;
             }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Prevent busy-waiting
     }
 }
 
 int main(const int argc, const char* argv[]) {
     const AppConfig config = parse_command_line_arguments(argc, argv);
     configure_logger(config.verbose);
+
+    LOG_TRACE("{} {}.{}.{}", APP_NAME, APP_VERSION_MAJOR, APP_VERSION_MINOR, APP_VERSION_PATCH);
 
     try {
         auto pipeline_file = get_pipeline_file_path(config.input_file);
@@ -97,7 +103,9 @@ int main(const int argc, const char* argv[]) {
         gstreamer->play(); // Blocking call
 
         keep_running = false; // Signal the input thread to stop once play() returns
-        input_thread.join();
+        if (input_thread.joinable()) {
+            input_thread.join();
+        }
     } catch (const std::exception& e) {
         LOG_ERROR("Error: {}", e.what());
         return EXIT_FAILURE;

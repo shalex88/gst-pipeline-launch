@@ -1,7 +1,9 @@
 include(cmake/EnableVcpkg.cmake)
 cmake_minimum_required(VERSION 3.22)
+include(cmake/SetVersion.cmake)
+project(gst-pipline-launch LANGUAGES CXX VERSION ${VERSION})
 
-project(gst-pipline-launch LANGUAGES CXX)
+add_compile_definitions(APP_NAME="${PROJECT_NAME}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
