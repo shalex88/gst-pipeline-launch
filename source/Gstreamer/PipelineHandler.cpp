@@ -20,7 +20,6 @@ std::vector<PipelineElement> PipelineHandler::get_all_elements() const {
             id++,
             element.at("name").get<std::string>(),
             element.at("type").get<std::string>(),
-            element.at("caps").get<std::string>(),
             element.at("properties").get<std::map<std::string, std::string>>(),
             element.at("optional").get<bool>(),
             false,

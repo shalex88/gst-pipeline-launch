@@ -4,37 +4,40 @@
       {
         "name": "videotestsrc",
         "type": "source",
-        "caps": "video/x-raw,width=1920,height=1080,framerate=30/1",
         "optional": false,
         "properties": {
           "pattern": "smpte"
         }
       },
       {
+        "name": "capsfilter",
+        "type": "filter",
+        "optional": false,
+        "properties": {
+          "caps": "video/x-raw,width=1920,height=1080,framerate=30/1"
+        }
+      },
+      {
         "name": "timeoverlay",
         "type": "filter",
-        "caps": "",
         "optional": false,
         "properties": {}
       },
       {
         "name": "metadatainjector",
         "type": "filter",
-        "caps": "",
         "optional": true,
         "properties": {}
       },
       {
         "name": "metadataextractor",
         "type": "filter",
-        "caps": "",
         "optional": true,
         "properties": {}
       },
       {
         "name": "autovideosink",
         "type": "sink",
-        "caps": "",
         "optional": false,
         "properties": {}
       }

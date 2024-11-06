@@ -10,7 +10,6 @@ struct PipelineElement {
     unsigned int id;
     std::string name;
     std::string type;
-    std::string caps;
     std::map<std::string, std::string> properties;
     bool optional;
     bool enabled;
@@ -24,10 +23,6 @@ inline std::ostream& operator<<(std::ostream& os, const PipelineElement& element
 
     for (const auto& [key, value] : element.properties) {
         os << " " << key << "=" << value;
-    }
-
-    if (!element.caps.empty()) {
-        os << " ! " << element.caps;
     }
 
     return os;
