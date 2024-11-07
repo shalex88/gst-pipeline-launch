@@ -1,6 +1,8 @@
 #ifndef GSTREAMER_H
 #define GSTREAMER_H
 
+#include <vector>
+#include <mutex>
 #include <gst/gst.h>
 #include "Gstreamer/PipelineElement.h"
 

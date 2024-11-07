@@ -1,5 +1,5 @@
-#include <nlohmann/json.hpp>
 #include "PipelineHandler.h"
+#include <nlohmann/json.hpp>
 
 PipelineHandler::PipelineHandler(const std::string& file_name) : file_(std::make_unique<File>(file_name)) {
     LOG_TRACE("PipelineHandler constructor");

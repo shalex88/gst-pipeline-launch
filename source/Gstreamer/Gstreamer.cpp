@@ -1,7 +1,7 @@
+#include "Gstreamer.h"
 #include <utility>
 #include <sstream>
 #include "Gstreamer/PipelineHandler.h"
-#include "Gstreamer.h"
 
 Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipeline_file)) {
     LOG_TRACE("Gstreamer constructor");
