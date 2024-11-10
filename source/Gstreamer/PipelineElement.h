@@ -9,7 +9,6 @@
 struct PipelineElement {
     unsigned int id;
     std::string name;
-    std::string type;
     std::map<std::string, std::string> properties;
     bool optional;
     bool enabled;

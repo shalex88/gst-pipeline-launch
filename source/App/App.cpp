@@ -16,7 +16,6 @@ void App::shutdown() {
     LOG_INFO("Terminating...");
 }
 
-
 std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_path) {
     std::filesystem::path pipeline_file = std::filesystem::current_path() / file_path;
     if (!exists(pipeline_file)) {

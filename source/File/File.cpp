@@ -29,6 +29,6 @@ std::vector<std::string> File::get_vector_of_lines() {
     return lines;
 }
 
-std::ifstream File::get_content() {
-    return std::move(file_); //TODO: copy instead of move
+std::ifstream& File::get_content() {
+    return std::ref(file_);
 }

@@ -12,7 +12,7 @@ public:
     ~File();
     std::string get_line();
     std::vector<std::string> get_vector_of_lines();
-    std::ifstream get_content();
+    std::ifstream& get_content();
 private:
     std::ifstream file_;
 };
