@@ -1,8 +1,6 @@
 #ifndef PERIPHERY_MANAGER_COMMANDINTERFACE_H
 #define PERIPHERY_MANAGER_COMMANDINTERFACE_H
 
-#include <utility>
-#include <csignal>
 #include "Logger/Logger.h"
 #include "AppInputs/InputInterface.h"
 
