@@ -1,9 +1,11 @@
 #include "CommandDispatcher.h"
 #include <utility>
 
-CommandDispatcher::CommandDispatcher(std::shared_ptr<Scheduler> scheduler) : scheduler_(std::move(scheduler)) {}
+CommandDispatcher::CommandDispatcher(std::shared_ptr<Scheduler> scheduler) : scheduler_(std::move(scheduler)) {
+}
 
-void CommandDispatcher::registerCommand(const std::string& command_name, const std::shared_ptr<CommandInterface>& command) {
+void CommandDispatcher::registerCommand(const std::string& command_name,
+                                        const std::shared_ptr<CommandInterface>& command) {
     std::lock_guard<std::mutex> lock(map_mutex_);
     if (command_map_.find(command_name) == command_map_.end()) {
         command_map_[command_name] = command;
@@ -12,7 +14,8 @@ void CommandDispatcher::registerCommand(const std::string& command_name, const s
     }
 }
 
-void CommandDispatcher::dispatchCommand(std::shared_ptr<InputInterface::Requester> requester, const std::string& command_name) {
+void CommandDispatcher::dispatchCommand(std::shared_ptr<InputInterface::Requester> requester,
+                                        const std::string& command_name) {
     {
         std::lock_guard<std::mutex> lock(map_mutex_);
         auto it = command_map_.find(command_name);

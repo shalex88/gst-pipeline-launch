@@ -5,8 +5,8 @@
 #include <utility>
 #include "Logger/Logger.h"
 
-MessageServer::MessageServer(std::shared_ptr<CommandDispatcher> command_dispatcher, std::shared_ptr<NetworkInterface> network_manager) :
-    command_dispatcher_(std::move(command_dispatcher)), network_manager_(std::move(network_manager)) {
+MessageServer::MessageServer(std::shared_ptr<CommandDispatcher> command_dispatcher, std::shared_ptr<NetworkInterface> network_manager)
+    : command_dispatcher_(std::move(command_dispatcher)), network_manager_(std::move(network_manager)) {
 }
 
 MessageServer::~MessageServer() {
@@ -81,10 +81,10 @@ bool MessageServer::parseMessage(const int client, const std::vector<char>& buff
 
 std::string MessageServer::printMessage(const int client, const std::vector<char>& buffer) const {
     std::ostringstream os;
-    os << "[Message Server] Received from client " << client <<" (" << buffer.size() << " bytes): ";
+    os << "[Message Server] Received from client " << client << " (" << buffer.size() << " bytes): ";
     os << std::string(buffer.begin(), buffer.end()) << " [";
 
-    for (const auto& c : buffer) {
+    for (const auto& c: buffer) {
         os << static_cast<int>(static_cast<unsigned char>(c)) << " ";
     }
 

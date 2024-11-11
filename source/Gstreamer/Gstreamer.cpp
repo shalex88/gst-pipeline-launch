@@ -14,18 +14,18 @@ Gstreamer::Gstreamer(std::string pipeline_file) : pipeline_file_(std::move(pipel
         LOG_ERROR("Failed to create pipeline");
     }
 
-    pipeline_elements_ = create_elements_list(pipeline_file_);
-    create_gst_pipeline(pipeline_elements_);
+    pipeline_elements_ = createElementsList(pipeline_file_);
+    createGstPipeline(pipeline_elements_);
 }
 
 Gstreamer::~Gstreamer() {
     LOG_TRACE("Gstreamer destructor");
 }
 
-void Gstreamer::link_all_gst_elements() {
+void Gstreamer::linkAllGstElements() {
     for (const auto& element: pipeline_elements_) {
         if (element.enabled) {
-            auto next_element = get_next_enabled_element(element);
+            auto next_element = getNextEnabledElement(element);
             if (next_element.gst_element) {
                 if (!gst_element_link(element.gst_element, next_element.gst_element)) {
                     LOG_ERROR("Failed to link element {} to {}", element.name, next_element.name);
@@ -35,7 +35,7 @@ void Gstreamer::link_all_gst_elements() {
     }
 }
 
-void Gstreamer::create_gst_element(PipelineElement& element) {
+void Gstreamer::createGstElement(PipelineElement& element) {
     element.gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
     if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
@@ -51,20 +51,20 @@ void Gstreamer::create_gst_element(PipelineElement& element) {
 
     element.enabled = true;
 
-    print_element(element);
+    printElement(element);
 }
 
-void Gstreamer::create_gst_pipeline(std::vector<PipelineElement>& pipeline) {
+void Gstreamer::createGstPipeline(std::vector<PipelineElement>& pipeline) {
     for (auto& element: pipeline) {
         if (!element.optional) {
-            create_gst_element(element);
+            createGstElement(element);
         }
     }
 
-    link_all_gst_elements();
+    linkAllGstElements();
 }
 
-void Gstreamer::print_element(const PipelineElement& element) {
+void Gstreamer::printElement(const PipelineElement& element) {
     std::ostringstream oss;
     oss << element;
     LOG_INFO("Enable element: {}", oss.str());
@@ -105,7 +105,7 @@ void Gstreamer::stop() {
     }
 }
 
-PipelineElement Gstreamer::get_previous_enabled_element(const PipelineElement& element) const {
+PipelineElement Gstreamer::getPreviousEnabledElement(const PipelineElement& element) const {
     for (auto i = element.id - 1; i != pipeline_elements_.size(); --i) {
         if (pipeline_elements_.at(i).enabled) {
             return pipeline_elements_.at(i);
@@ -115,7 +115,7 @@ PipelineElement Gstreamer::get_previous_enabled_element(const PipelineElement& e
     return {};
 }
 
-PipelineElement Gstreamer::get_next_enabled_element(const PipelineElement& element) const {
+PipelineElement Gstreamer::getNextEnabledElement(const PipelineElement& element) const {
     for (auto i = element.id + 1; i != pipeline_elements_.size(); ++i) {
         if (pipeline_elements_.at(i).enabled) {
             return pipeline_elements_.at(i);
@@ -125,7 +125,7 @@ PipelineElement Gstreamer::get_next_enabled_element(const PipelineElement& eleme
     return {};
 }
 
-int Gstreamer::enable_optional_element(PipelineElement& element) const {
+int Gstreamer::enableOptionalElement(PipelineElement& element) const {
     std::lock_guard lock_guard(mutex_);
 
     LOG_INFO("Enable element: {}", element.name);
@@ -136,13 +136,13 @@ int Gstreamer::enable_optional_element(PipelineElement& element) const {
         return EXIT_FAILURE;
     }
 
-    const auto previous_gst_element = get_previous_enabled_element(element).gst_element;
+    const auto previous_gst_element = getPreviousEnabledElement(element).gst_element;
     if (!previous_gst_element) {
         LOG_ERROR("Could not find previous element");
         return EXIT_FAILURE;
     }
 
-    const auto next_gst_element = get_next_enabled_element(element).gst_element;
+    const auto next_gst_element = getNextEnabledElement(element).gst_element;
     if (!next_gst_element) {
         LOG_ERROR("Could not find next element");
         return EXIT_FAILURE;
@@ -160,7 +160,7 @@ int Gstreamer::enable_optional_element(PipelineElement& element) const {
     return EXIT_SUCCESS;
 }
 
-int Gstreamer::disable_optional_element(PipelineElement& element) const {
+int Gstreamer::disableOptionalElement(PipelineElement& element) const {
     std::lock_guard lock_guard(mutex_);
 
     LOG_INFO("Disable element: {}", element.name);
@@ -182,13 +182,13 @@ int Gstreamer::disable_optional_element(PipelineElement& element) const {
                           return GST_PAD_PROBE_OK;
                       }, nullptr, nullptr);
 
-    const auto previous_gst_element = get_previous_enabled_element(element).gst_element;
+    const auto previous_gst_element = getPreviousEnabledElement(element).gst_element;
     if (!previous_gst_element) {
         LOG_ERROR("Could not find previous element");
         return EXIT_FAILURE;
     }
 
-    const auto next_gst_element = get_next_enabled_element(element).gst_element;
+    const auto next_gst_element = getNextEnabledElement(element).gst_element;
     if (!next_gst_element) {
         LOG_ERROR("Could not find next element");
         return EXIT_FAILURE;
@@ -209,11 +209,11 @@ int Gstreamer::disable_optional_element(PipelineElement& element) const {
     return EXIT_SUCCESS;
 }
 
-int Gstreamer::enable_all_optional_pipeline_elements() {
+int Gstreamer::enableAllOptionalPipelineElements() {
     for (auto& element: pipeline_elements_) {
         if (element.optional) {
             if (!element.enabled) {
-                enable_optional_element(element);
+                enableOptionalElement(element);
             } else {
                 LOG_WARN("Element {} is already enabled", element.name);
             }
@@ -223,11 +223,11 @@ int Gstreamer::enable_all_optional_pipeline_elements() {
     return EXIT_SUCCESS;
 }
 
-int Gstreamer::disable_all_optional_pipeline_elements() {
+int Gstreamer::disableAllOptionalPipelineElements() {
     for (auto& element: pipeline_elements_) {
         if (element.optional) {
             if (element.enabled) {
-                disable_optional_element(element);
+                disableOptionalElement(element);
             } else {
                 LOG_WARN("Element {} is already disabled", element.name);
             }
@@ -237,8 +237,8 @@ int Gstreamer::disable_all_optional_pipeline_elements() {
     return EXIT_SUCCESS;
 }
 
-int Gstreamer::enable_optional_pipeline_element(const std::string& element_name) {
-    auto element = find_element(element_name);
+int Gstreamer::enableOptionalPipelineElement(const std::string& element_name) {
+    auto element = findElement(element_name);
     if (element.name.empty()) {
         LOG_ERROR("Element {} not found", element_name);
         return EXIT_FAILURE;
@@ -249,11 +249,11 @@ int Gstreamer::enable_optional_pipeline_element(const std::string& element_name)
         return EXIT_SUCCESS;
     }
 
-    return enable_optional_element(element);
+    return enableOptionalElement(element);
 }
 
-int Gstreamer::disable_optional_pipeline_element(const std::string& element_name) {
-    auto element = find_element(element_name);
+int Gstreamer::disableOptionalPipelineElement(const std::string& element_name) {
+    auto element = findElement(element_name);
     if (element.name.empty()) {
         LOG_ERROR("Element {} not found", element_name);
         return EXIT_FAILURE;
@@ -264,10 +264,10 @@ int Gstreamer::disable_optional_pipeline_element(const std::string& element_name
         return EXIT_SUCCESS;
     }
 
-    return disable_optional_element(element);
+    return disableOptionalElement(element);
 }
 
-std::vector<std::string> Gstreamer::get_optional_pipeline_elements_names() const {
+std::vector<std::string> Gstreamer::getOptionalPipelineElementsNames() const {
     std::vector<std::string> elements_names;
     for (const auto& element: pipeline_elements_) {
         if (element.optional) {
@@ -278,7 +278,7 @@ std::vector<std::string> Gstreamer::get_optional_pipeline_elements_names() const
     return elements_names;
 }
 
-PipelineElement Gstreamer::find_element(const std::string& element_name) {
+PipelineElement Gstreamer::findElement(const std::string& element_name) {
     for (const auto& element: pipeline_elements_) {
         if (element.name == element_name) {
             return element;
@@ -288,9 +288,9 @@ PipelineElement Gstreamer::find_element(const std::string& element_name) {
     return {};
 }
 
-std::vector<PipelineElement> Gstreamer::create_elements_list(const std::string& file_path) {
+std::vector<PipelineElement> Gstreamer::createElementsList(const std::string& file_path) {
     const auto pipeline_handler = std::make_unique<PipelineHandler>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
 
-    return pipeline_handler->get_all_elements();
+    return pipeline_handler->getAllElements();
 }

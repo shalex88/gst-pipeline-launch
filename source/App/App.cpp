@@ -43,7 +43,7 @@ void App::run(const AppConfig& config) {
     dispatcher->registerCommand("disable_all", std::make_shared<DisableAllOptionalElementsCommand>(gstreamer));
     dispatcher->registerCommand("stop", std::make_shared<StopPipelineCommand>(gstreamer));
 
-    for (auto optional_element_name: gstreamer->get_optional_pipeline_elements_names()) {
+    for (auto optional_element_name: gstreamer->getOptionalPipelineElementsNames()) {
         std::string enable_command_name = "enable_" + optional_element_name;
         std::string disable_command_name = "disable_" + optional_element_name;
         dispatcher->registerCommand(enable_command_name,

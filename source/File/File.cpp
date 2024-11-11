@@ -13,13 +13,13 @@ File::~File() {
     file_.close();
 }
 
-std::string File::get_line() {
+std::string File::getLine() {
     std::string line;
     std::getline(file_, line);
     return line;
 }
 
-std::vector<std::string> File::get_vector_of_lines() {
+std::vector<std::string> File::getVectorOfLines() {
     std::vector<std::string> lines;
     std::string line;
     while (std::getline(file_, line)) {
@@ -28,6 +28,6 @@ std::vector<std::string> File::get_vector_of_lines() {
     return lines;
 }
 
-std::ifstream& File::get_content() {
+std::ifstream& File::getContent() {
     return std::ref(file_);
 }
