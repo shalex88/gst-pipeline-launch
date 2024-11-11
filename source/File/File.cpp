@@ -1,5 +1,4 @@
 #include "File.h"
-#include <nlohmann/json.hpp>
 
 File::File(const std::string& file_name) : file_(file_name) {
     LOG_TRACE("File constructor");
