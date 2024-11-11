@@ -238,33 +238,33 @@ int Gstreamer::disableAllOptionalPipelineElements() {
 }
 
 int Gstreamer::enableOptionalPipelineElement(const std::string& element_name) {
-    auto element = findElement(element_name);
-    if (element.name.empty()) {
-        LOG_ERROR("Element {} not found", element_name);
-        return EXIT_FAILURE;
+    for (auto& element: pipeline_elements_) {
+        if (element.name == element_name) {
+            if (!element.enabled) {
+                return enableOptionalElement(element);
+            } else {
+                LOG_WARN("Element {} is already enabled", element.name);
+                return EXIT_FAILURE;
+            }
+        }
     }
 
-    if (element.enabled) {
-        LOG_WARN("Element {} is already enabled", element_name);
-        return EXIT_SUCCESS;
-    }
-
-    return enableOptionalElement(element);
+    return EXIT_FAILURE;
 }
 
 int Gstreamer::disableOptionalPipelineElement(const std::string& element_name) {
-    auto element = findElement(element_name);
-    if (element.name.empty()) {
-        LOG_ERROR("Element {} not found", element_name);
-        return EXIT_FAILURE;
+    for (auto& element: pipeline_elements_) {
+        if (element.name == element_name) {
+            if (element.enabled) {
+                return disableOptionalElement(element);
+            } else {
+                LOG_WARN("Element {} is already disabled", element.name);
+                return EXIT_FAILURE;
+            }
+        }
     }
 
-    if (!element.enabled) {
-        LOG_WARN("Element {} is already disabled", element_name);
-        return EXIT_SUCCESS;
-    }
-
-    return disableOptionalElement(element);
+    return EXIT_FAILURE;
 }
 
 std::vector<std::string> Gstreamer::getOptionalPipelineElementsNames() const {
@@ -278,14 +278,14 @@ std::vector<std::string> Gstreamer::getOptionalPipelineElementsNames() const {
     return elements_names;
 }
 
-PipelineElement Gstreamer::findElement(const std::string& element_name) {
-    for (const auto& element: pipeline_elements_) {
+PipelineElement& Gstreamer::findElement(const std::string& element_name) {
+    for (auto& element: pipeline_elements_) {
         if (element.name == element_name) {
             return element;
         }
     }
 
-    return {};
+    throw std::runtime_error("Element not found");
 }
 
 std::vector<PipelineElement> Gstreamer::createElementsList(const std::string& file_path) {

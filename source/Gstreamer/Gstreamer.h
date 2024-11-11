@@ -26,7 +26,7 @@ private:
     void printElement(const PipelineElement& element);
     PipelineElement getPreviousEnabledElement(const PipelineElement& element) const;
     PipelineElement getNextEnabledElement(const PipelineElement& element) const;
-    PipelineElement findElement(const std::string& element_name);
+    PipelineElement& findElement(const std::string& element_name);
     int enableOptionalElement(PipelineElement& element) const;
     int disableOptionalElement(PipelineElement& element) const;
     GMainLoop* gst_loop_ = nullptr;

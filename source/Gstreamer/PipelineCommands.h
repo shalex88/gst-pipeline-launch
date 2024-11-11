@@ -8,7 +8,7 @@
 
 class EnableOptionalElementCommand : public CommandInterface {
 public:
-    explicit EnableOptionalElementCommand(std::shared_ptr<Gstreamer> sensor, std::string& element_name)
+    explicit EnableOptionalElementCommand(std::shared_ptr<Gstreamer> sensor, const std::string element_name)
         : component_(std::move(sensor)), element_name_(std::move(element_name)) {}
     void execute(std::shared_ptr<InputInterface::Requester> requester) override;
     ~EnableOptionalElementCommand() override = default;
@@ -20,7 +20,7 @@ private:
 
 class DisableOptionalElementCommand : public CommandInterface {
 public:
-    explicit DisableOptionalElementCommand(std::shared_ptr<Gstreamer> sensor, std::string& element_name)
+    explicit DisableOptionalElementCommand(std::shared_ptr<Gstreamer> sensor, const std::string element_name)
         : component_(std::move(sensor)), element_name_(std::move(element_name)) {}
     void execute(std::shared_ptr<InputInterface::Requester> requester) override;
     ~DisableOptionalElementCommand() override = default;
