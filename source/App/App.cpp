@@ -29,7 +29,7 @@ std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_p
 }
 
 void App::run(const AppConfig& config) {
-     SignalHandler::setupSignalHandling();
+    SignalHandler::setupSignalHandling();
 
     auto scheduler = std::make_shared<Scheduler>();
     scheduler->init();
@@ -37,18 +37,26 @@ void App::run(const AppConfig& config) {
     auto pipeline_file = get_pipeline_file_path(config.input_file);
     auto gstreamer = std::make_shared<Gstreamer>(pipeline_file);
 
-     auto dispatcher = std::make_shared<CommandDispatcher>(scheduler);
+    auto dispatcher = std::make_shared<CommandDispatcher>(scheduler);
 
-     dispatcher->registerCommand("enable", std::make_shared<StartOptionalElementsCommand>(gstreamer));
-     dispatcher->registerCommand("disable", std::make_shared<StopOptionalElementsCommand>(gstreamer));
-     dispatcher->registerCommand("stop", std::make_shared<StopPipelineCommand>(gstreamer));
+    dispatcher->registerCommand("enable_all", std::make_shared<EnableAllOptionalElementsCommand>(gstreamer));
+    dispatcher->registerCommand("disable_all", std::make_shared<DisableAllOptionalElementsCommand>(gstreamer));
+    dispatcher->registerCommand("stop", std::make_shared<StopPipelineCommand>(gstreamer));
 
-     constexpr int tcp_server_port = 12345;
-     auto network_manager = std::make_shared<TcpNetworkManager>(tcp_server_port);
+    for (auto optional_element_name: gstreamer->get_optional_pipeline_elements_names()) {
+        std::string enable_command_name = "enable_" + optional_element_name;
+        std::string disable_command_name = "disable_" + optional_element_name;
+        dispatcher->registerCommand(enable_command_name,
+                                    std::make_shared<EnableOptionalElementCommand>(gstreamer, optional_element_name));
+        dispatcher->registerCommand(disable_command_name,
+                                    std::make_shared<DisableOptionalElementCommand>(gstreamer, optional_element_name));
+    }
 
-     auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
-     tcp_server->init();
+    constexpr int tcp_server_port = 12345;
+    auto network_manager = std::make_shared<TcpNetworkManager>(tcp_server_port);
 
+    auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
+    tcp_server->init();
 
     gstreamer->play(); // Blocking call
 
