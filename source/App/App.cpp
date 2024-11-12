@@ -29,7 +29,7 @@ std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_p
 }
 
 void App::run(const AppConfig& config) {
-    // SignalHandler::setupSignalHandling();
+    // SignalHandler::setupSignalHandling(); //FIXME:
 
     auto scheduler = std::make_shared<Scheduler>();
     scheduler->init();

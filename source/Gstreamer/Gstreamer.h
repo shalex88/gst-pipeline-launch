@@ -1,6 +1,7 @@
 #ifndef GSTREAMER_H
 #define GSTREAMER_H
 
+#include <memory>
 #include <vector>
 #include <mutex>
 #include <gst/gst.h>
@@ -26,11 +27,10 @@ private:
     void printElement(const PipelineElement& element);
     PipelineElement getPreviousEnabledElement(const PipelineElement& element) const;
     PipelineElement getNextEnabledElement(const PipelineElement& element) const;
-    PipelineElement& findElement(const std::string& element_name);
     int enableOptionalElement(PipelineElement& element) const;
     int disableOptionalElement(PipelineElement& element) const;
-    GMainLoop* gst_loop_ = nullptr;
-    GstElement* gst_pipeline_ = nullptr;
+    std::shared_ptr<GMainLoop> gst_loop_;
+    std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;
     std::vector<PipelineElement> pipeline_elements_;
     mutable std::mutex mutex_;

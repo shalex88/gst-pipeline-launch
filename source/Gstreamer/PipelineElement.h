@@ -6,7 +6,7 @@
 #include <string>
 #include <gst/gstelement.h>
 
-struct PipelineElement {
+using PipelineElement = struct PipelineElement {
     unsigned int id;
     std::string name;
     std::map<std::string, std::string> properties;
@@ -15,7 +15,7 @@ struct PipelineElement {
     GstElement* gst_element;
 
     friend std::ostream& operator<<(std::ostream& os, const PipelineElement& element);
-} typedef PipelineElement;
+};
 
 inline std::ostream& operator<<(std::ostream& os, const PipelineElement& element) {
     os << element.name;
