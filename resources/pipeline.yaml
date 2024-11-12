@@ -18,4 +18,4 @@ pipeline:
       optional: true
     - name: metadataextractor
       optional: true
-    - name: fakesink
+    - name: autovideosink
