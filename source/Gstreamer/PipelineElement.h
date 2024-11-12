@@ -2,16 +2,23 @@
 #define PIPELINEELEMENT_H
 
 #include <map>
+#include <memory>
+#include <limits>
 #include <ostream>
 #include <string>
 #include <gst/gstelement.h>
 
-using PipelineElement = struct PipelineElement {
-    unsigned int id;
-    std::string name;
+class PipelineElement {
+public:
+    PipelineElement();
+    PipelineElement(unsigned int id, std::string name, std::map<std::string, std::string> properties,
+                    bool optional, bool enabled, const std::shared_ptr<GstElement> gst_element);
+    unsigned int id {std::numeric_limits<unsigned int>::max()};
+    std::string name {};
     std::map<std::string, std::string> properties;
-    bool optional;
-    bool enabled;
+    bool optional {false};
+    bool enabled {false};
+    // std::shared_ptr<GstElement> gst_element;
     GstElement* gst_element;
 
     friend std::ostream& operator<<(std::ostream& os, const PipelineElement& element);

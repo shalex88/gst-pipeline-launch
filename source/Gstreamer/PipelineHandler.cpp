@@ -15,7 +15,7 @@ std::vector<PipelineElement> PipelineHandler::getAllElements() const {
     std::vector<PipelineElement> all_elements;
     for (const auto& element: yaml_data["pipeline"]["elements"]) {
         static unsigned int id = 0;
-        all_elements.emplace_back(PipelineElement{
+        all_elements.emplace_back(
             id++,
             element["name"].as<std::string>(),
             element["properties"].IsDefined()
@@ -24,7 +24,7 @@ std::vector<PipelineElement> PipelineHandler::getAllElements() const {
             element["optional"].IsDefined() ? element["optional"].as<bool>() : false,
             false,
             nullptr
-        });
+        );
     }
 
     return all_elements;

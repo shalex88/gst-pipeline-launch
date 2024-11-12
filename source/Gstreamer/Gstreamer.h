@@ -20,9 +20,9 @@ public:
     std::vector<std::string> getOptionalPipelineElementsNames() const;
 
 private:
-    void linkAllGstElements();
-    void createGstElement(PipelineElement& element);
-    void createGstPipeline(std::vector<PipelineElement>& pipeline);
+    int linkAllGstElements();
+    int createGstElement(PipelineElement& element);
+    int createGstPipeline(std::vector<PipelineElement>& pipeline);
     std::vector<PipelineElement> createElementsList(const std::string& file_path);
     void printElement(const PipelineElement& element);
     PipelineElement getPreviousEnabledElement(const PipelineElement& element) const;

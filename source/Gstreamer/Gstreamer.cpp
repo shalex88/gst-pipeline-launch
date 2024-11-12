@@ -22,23 +22,32 @@ Gstreamer::~Gstreamer() {
     LOG_TRACE("Gstreamer destructor");
 }
 
-void Gstreamer::linkAllGstElements() {
+int Gstreamer::linkAllGstElements() {
     for (const auto& element: pipeline_elements_) {
         if (element.enabled) {
             auto next_element = getNextEnabledElement(element);
             if (next_element.gst_element) {
                 if (!gst_element_link(element.gst_element, next_element.gst_element)) {
                     LOG_ERROR("Failed to link element {} to {}", element.name, next_element.name);
+                    return EXIT_FAILURE;
                 }
             }
         }
     }
+
+    return EXIT_SUCCESS;
 }
 
-void Gstreamer::createGstElement(PipelineElement& element) {
+int Gstreamer::createGstElement(PipelineElement& element) {
+    // element.gst_element = std::shared_ptr<GstElement>(gst_element_factory_make(element.name.c_str(), element.name.c_str()), gst_object_unref);
+    // element.gst_element.reset(gst_element_factory_make(element.name.c_str(), element.name.c_str()));
     element.gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
-    if (!GST_IS_ELEMENT(element.gst_element)) {
+    if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
+        return EXIT_FAILURE;
+    } else if (!GST_IS_ELEMENT(element.gst_element)) {
+        LOG_ERROR("Non valid pipeline element {}", element.name);
+        return EXIT_FAILURE;
     }
 
     for (const auto& [key, value]: element.properties) {
@@ -47,19 +56,29 @@ void Gstreamer::createGstElement(PipelineElement& element) {
 
     if (!gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
         LOG_ERROR("Failed to add element {} to pipeline", gst_element_get_name(element.gst_element));
+        return EXIT_FAILURE;
     }
 
     element.enabled = true;
     printElement(element);
+
+    return EXIT_SUCCESS;
 }
 
-void Gstreamer::createGstPipeline(std::vector<PipelineElement>& pipeline) {
+int Gstreamer::createGstPipeline(std::vector<PipelineElement>& pipeline) {
     for (auto& element: pipeline) {
         if (!element.optional) {
-            createGstElement(element);
+            if (createGstElement(element) != EXIT_SUCCESS) {
+                return EXIT_FAILURE;
+            }
         }
     }
-    linkAllGstElements();
+
+    if (linkAllGstElements() != EXIT_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 void Gstreamer::printElement(const PipelineElement& element) {
@@ -118,9 +137,15 @@ int Gstreamer::enableOptionalElement(PipelineElement& element) const {
 
     LOG_INFO("Enable element: {}", element.name);
 
+    // element.gst_element = std::shared_ptr<GstElement>(gst_element_factory_make(element.name.c_str(), element.name.c_str()), gst_object_unref);
+    // element.gst_element = std::shared_ptr<GstElement>(gst_element_factory_make(element.name.c_str(), element.name.c_str()));
+    // element.gst_element.reset(gst_element_factory_make(element.name.c_str(), element.name.c_str()));
     element.gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
-    if (!GST_IS_ELEMENT(element.gst_element)) {
+    if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
+        return EXIT_FAILURE;
+    } else if (!GST_IS_ELEMENT(element.gst_element)) {
+        LOG_ERROR("Non valid pipeline element {}", element.name);
         return EXIT_FAILURE;
     }
 
@@ -160,7 +185,7 @@ int Gstreamer::disableOptionalElement(PipelineElement& element) const {
         return EXIT_FAILURE;
     }
 
-    auto sink_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element, "video_sink"), gst_object_unref); // TODO: check if video_sink is always correct
+    auto sink_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element, "video_sink"), gst_object_unref);
     if (!GST_IS_PAD(sink_pad.get())) {
         LOG_ERROR("Failed to get sink pad for element {}", element.name);
         return EXIT_FAILURE;
@@ -188,9 +213,17 @@ int Gstreamer::disableOptionalElement(PipelineElement& element) const {
 
     gst_element_unlink(previous_enabled_element.gst_element, element.gst_element);
     gst_element_unlink(element.gst_element, next_enabled_element.gst_element);
-    gst_bin_remove(GST_BIN(gst_pipeline_.get()), element.gst_element);
 
-    gst_element_link(previous_enabled_element.gst_element, next_enabled_element.gst_element);
+    // gst_bin_remove() unrefs the element
+    if (!gst_bin_remove(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
+        LOG_ERROR("Failed to remove element {} from pipeline", element.name);
+        return EXIT_FAILURE;
+    }
+
+    if (!gst_element_link(previous_enabled_element.gst_element, next_enabled_element.gst_element)) {
+        LOG_ERROR("Failed to link previous element to next element");
+        return EXIT_FAILURE;
+    }
 
     element.enabled = false;
     element.gst_element = nullptr;
