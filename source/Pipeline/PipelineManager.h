@@ -20,21 +20,20 @@ public:
     std::vector<std::string> getOptionalPipelineElementsNames() const;
 
 private:
-    int linkAllGstElements();
+    int linkAllGstElements() const;
     int createGstElement(PipelineElement& element) const;
-    int createGstPipeline(std::vector<PipelineElement>& pipeline);
-    static std::vector<PipelineElement> createElementsList(const std::string& file_path);
+    int createGstPipeline(std::vector<std::shared_ptr<PipelineElement>>& pipeline) const;
+    void createElementsList(const std::string& file_path);
     static void printElement(const PipelineElement& element);
-    PipelineElement getPreviousEnabledElement(const PipelineElement& element) const;
-    PipelineElement getNextEnabledElement(const PipelineElement& element) const;
+    std::weak_ptr<PipelineElement> getPreviousEnabledElement(const PipelineElement& element) const;
+    std::weak_ptr<PipelineElement> getNextEnabledElement(const PipelineElement& element) const;
     int enableElement(PipelineElement& element) const;
     int disableElement(PipelineElement& element) const;
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;
-    std::vector<PipelineElement> pipeline_elements_;
+    std::vector<std::shared_ptr<PipelineElement>> pipeline_elements_;
     mutable std::mutex mutex_;
 };
-
 
 #endif //PIPELINEMANAGER_H

@@ -2,6 +2,7 @@
 #include <utility>
 #include <sstream>
 #include "Pipeline/PipelineHandler.h"
+#include "PipelineElement.h"
 
 PipelineManager::PipelineManager(std::string pipeline_file) : pipeline_file_(std::move(pipeline_file)) {
     LOG_TRACE("Pipeline constructor");
@@ -14,7 +15,7 @@ PipelineManager::PipelineManager(std::string pipeline_file) : pipeline_file_(std
         LOG_ERROR("Failed to create pipeline");
     }
 
-    pipeline_elements_ = createElementsList(pipeline_file_);
+    createElementsList(pipeline_file_);
     createGstPipeline(pipeline_elements_);
 }
 
@@ -22,13 +23,13 @@ PipelineManager::~PipelineManager() {
     LOG_TRACE("Pipeline destructor");
 }
 
-int PipelineManager::linkAllGstElements() {
+int PipelineManager::linkAllGstElements() const {
     for (const auto& element: pipeline_elements_) {
-        if (element.enabled) {
-            auto next_element = getNextEnabledElement(element);
-            if (next_element.gst_element.get()) {
-                if (!gst_element_link(element.gst_element.get(), next_element.gst_element.get())) {
-                    LOG_ERROR("Failed to link element {} to {}", element.name, next_element.name);
+        if (element->enabled) {
+            auto next_element = getNextEnabledElement(*element);
+            if (next_element.lock() && next_element.lock()->gst_element.get()) {
+                if (!gst_element_link(element->gst_element.get(), next_element.lock()->gst_element.get())) {
+                    LOG_ERROR("Failed to link element {} to {}", element->name, next_element.lock()->name);
                     return EXIT_FAILURE;
                 }
             }
@@ -44,7 +45,8 @@ int PipelineManager::createGstElement(PipelineElement& element) const {
     if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
         return EXIT_FAILURE;
-    } else if (!GST_IS_ELEMENT(element.gst_element.get())) {
+    }
+    if (!GST_IS_ELEMENT(element.gst_element.get())) {
         LOG_ERROR("Non valid pipeline element {}", element.name);
         return EXIT_FAILURE;
     }
@@ -64,10 +66,10 @@ int PipelineManager::createGstElement(PipelineElement& element) const {
     return EXIT_SUCCESS;
 }
 
-int PipelineManager::createGstPipeline(std::vector<PipelineElement>& pipeline) {
+int PipelineManager::createGstPipeline(std::vector<std::shared_ptr<PipelineElement>>& pipeline) const {
     for (auto& element: pipeline) {
-        if (!element.optional) {
-            if (createGstElement(element) != EXIT_SUCCESS) {
+        if (!element->optional) {
+            if (createGstElement(*element) != EXIT_SUCCESS) {
                 return EXIT_FAILURE;
             }
         }
@@ -93,7 +95,7 @@ int PipelineManager::play() {
     auto bus = std::shared_ptr<GstBus>(gst_element_get_bus(gst_pipeline_.get()), gst_object_unref);
     gst_bus_add_watch(bus.get(), [](GstBus*, GstMessage* message, gpointer data) -> gboolean {
         if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_EOS) {
-            static_cast<PipelineManager*>(data)->stop();
+            return static_cast<PipelineManager*>(data)->stop();
         }
         return TRUE;
     }, this);
@@ -120,22 +122,22 @@ int PipelineManager::stop() const {
     return EXIT_FAILURE;
 }
 
-PipelineElement PipelineManager::getPreviousEnabledElement(const PipelineElement& element) const {
-    for (auto i = element.id - 1; i != pipeline_elements_.size(); --i) {
-        if (pipeline_elements_.at(i).enabled) {
-            return pipeline_elements_.at(i);
+std::weak_ptr<PipelineElement> PipelineManager::getPreviousEnabledElement(const PipelineElement& element) const {
+    for (auto i = element.id - 1; i < pipeline_elements_.size(); --i) {
+        if (pipeline_elements_.at(i) && pipeline_elements_.at(i)->enabled) {
+            return pipeline_elements_.at(i);  // Return a weak_ptr
         }
     }
-    return {};
+    return {};  // Return empty weak_ptr if not found
 }
 
-PipelineElement PipelineManager::getNextEnabledElement(const PipelineElement& element) const {
+std::weak_ptr<PipelineElement> PipelineManager::getNextEnabledElement(const PipelineElement& element) const {
     for (auto i = element.id + 1; i != pipeline_elements_.size(); ++i) {
-        if (pipeline_elements_.at(i).enabled) {
-            return pipeline_elements_.at(i);
+        if (pipeline_elements_.at(i) && pipeline_elements_.at(i)->enabled) {
+            return pipeline_elements_.at(i);  // Return a weak_ptr
         }
     }
-    return {};
+    return {};  // Return empty weak_ptr if not found
 }
 
 int PipelineManager::enableElement(PipelineElement& element) const {
@@ -151,28 +153,29 @@ int PipelineManager::enableElement(PipelineElement& element) const {
     if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
         return EXIT_FAILURE;
-    } else if (!GST_IS_ELEMENT(element.gst_element.get())) {
+    }
+    if (!GST_IS_ELEMENT(element.gst_element.get())) {
         LOG_ERROR("Non valid pipeline element {}", element.name);
         return EXIT_FAILURE;
     }
 
     const auto previous_enabled_element = getPreviousEnabledElement(element);
-    if (!GST_IS_ELEMENT(previous_enabled_element.gst_element.get())) {
+    if (!previous_enabled_element.lock() || !GST_IS_ELEMENT(previous_enabled_element.lock()->gst_element.get())) {
         LOG_ERROR("Could not find previous element");
         return EXIT_FAILURE;
     }
 
     const auto next_enabled_element = getNextEnabledElement(element);
-    if (!GST_IS_ELEMENT(next_enabled_element.gst_element.get())) {
+    if (!next_enabled_element.lock() || !GST_IS_ELEMENT(next_enabled_element.lock()->gst_element.get())) {
         LOG_ERROR("Could not find next element");
         return EXIT_FAILURE;
     }
 
     gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element.get());
 
-    gst_element_unlink(previous_enabled_element.gst_element.get(), next_enabled_element.gst_element.get());
-    gst_element_link_many(previous_enabled_element.gst_element.get(), element.gst_element.get(),
-                          next_enabled_element.gst_element.get(), NULL);
+    gst_element_unlink(previous_enabled_element.lock()->gst_element.get(), next_enabled_element.lock()->gst_element.get());
+    gst_element_link_many(previous_enabled_element.lock()->gst_element.get(), element.gst_element.get(),
+                          next_enabled_element.lock()->gst_element.get(), NULL);
 
     gst_element_sync_state_with_parent(element.gst_element.get());
     element.enabled = true;
@@ -212,26 +215,26 @@ int PipelineManager::disableElement(PipelineElement& element) const {
                       }, nullptr, nullptr);
 
     const auto previous_enabled_element = getPreviousEnabledElement(element);
-    if (!GST_IS_ELEMENT(previous_enabled_element.gst_element.get())) {
+    if (!previous_enabled_element.lock() || !GST_IS_ELEMENT(previous_enabled_element.lock()->gst_element.get())) {
         LOG_ERROR("Could not find previous element");
         return EXIT_FAILURE;
     }
 
     const auto next_enabled_element = getNextEnabledElement(element);
-    if (!GST_IS_ELEMENT(next_enabled_element.gst_element.get())) {
+    if (!next_enabled_element.lock() || !GST_IS_ELEMENT(next_enabled_element.lock()->gst_element.get())) {
         LOG_ERROR("Could not find next element");
         return EXIT_FAILURE;
     }
 
-    gst_element_unlink(previous_enabled_element.gst_element.get(), element.gst_element.get());
-    gst_element_unlink(element.gst_element.get(), next_enabled_element.gst_element.get());
+    gst_element_unlink(previous_enabled_element.lock()->gst_element.get(), element.gst_element.get());
+    gst_element_unlink(element.gst_element.get(), next_enabled_element.lock()->gst_element.get());
 
     if (!gst_bin_remove(GST_BIN(gst_pipeline_.get()), element.gst_element.get())) {
         LOG_ERROR("Failed to remove element {} from pipeline", element.name);
         return EXIT_FAILURE;
     }
 
-    if (!gst_element_link(previous_enabled_element.gst_element.get(), next_enabled_element.gst_element.get())) {
+    if (!gst_element_link(previous_enabled_element.lock()->gst_element.get(), next_enabled_element.lock()->gst_element.get())) {
         LOG_ERROR("Failed to link previous element to next element");
         return EXIT_FAILURE;
     }
@@ -243,10 +246,10 @@ int PipelineManager::disableElement(PipelineElement& element) const {
 
 int PipelineManager::enableAllOptionalPipelineElements() {
     for (auto& element: pipeline_elements_) {
-        if (element.optional && !element.enabled) {
-            enableElement(element);
-        } else if (element.optional) {
-            LOG_WARN("Element {} is already enabled", element.name);
+        if (element->optional && !element->enabled) {
+            enableElement(*element);
+        } else if (element->optional) {
+            LOG_WARN("Element {} is already enabled", element->name);
         }
     }
     return EXIT_SUCCESS;
@@ -254,10 +257,10 @@ int PipelineManager::enableAllOptionalPipelineElements() {
 
 int PipelineManager::disableAllOptionalPipelineElements() {
     for (auto& element: pipeline_elements_) {
-        if (element.optional && element.enabled) {
-            disableElement(element);
-        } else if (element.optional) {
-            LOG_WARN("Element {} is already disabled", element.name);
+        if (element->optional && element->enabled) {
+            disableElement(*element);
+        } else if (element->optional) {
+            LOG_WARN("Element {} is already disabled", element->name);
         }
     }
     return EXIT_SUCCESS;
@@ -265,12 +268,12 @@ int PipelineManager::disableAllOptionalPipelineElements() {
 
 int PipelineManager::enableOptionalPipelineElement(const std::string& element_name) {
     for (auto& element: pipeline_elements_) {
-        if (element.name == element_name) {
-            if (element.enabled) {
-                LOG_WARN("Element {} is already enabled", element.name);
+        if (element->name == element_name) {
+            if (element->enabled) {
+                LOG_WARN("Element {} is already enabled", element->name);
                 return EXIT_FAILURE;
             }
-            return enableElement(element);
+            return enableElement(*element);
         }
     }
     return EXIT_FAILURE;
@@ -278,12 +281,12 @@ int PipelineManager::enableOptionalPipelineElement(const std::string& element_na
 
 int PipelineManager::disableOptionalPipelineElement(const std::string& element_name) {
     for (auto& element: pipeline_elements_) {
-        if (element.name == element_name) {
-            if (!element.enabled) {
-                LOG_WARN("Element {} is already disabled", element.name);
+        if (element->name == element_name) {
+            if (!element->enabled) {
+                LOG_WARN("Element {} is already disabled", element->name);
                 return EXIT_FAILURE;
             }
-            return disableElement(element);
+            return disableElement(*element);
         }
     }
     return EXIT_FAILURE;
@@ -292,15 +295,17 @@ int PipelineManager::disableOptionalPipelineElement(const std::string& element_n
 std::vector<std::string> PipelineManager::getOptionalPipelineElementsNames() const {
     std::vector<std::string> elements_names;
     for (const auto& element: pipeline_elements_) {
-        if (element.optional) {
-            elements_names.push_back(element.name);
+        if (element->optional) {
+            elements_names.push_back(element->name);
         }
     }
     return elements_names;
 }
 
-std::vector<PipelineElement> PipelineManager::createElementsList(const std::string& file_path) {
+void PipelineManager::createElementsList(const std::string& file_path) {
     auto pipeline_handler = std::make_unique<PipelineHandler>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
-    return pipeline_handler->getAllElements();
+    for (auto& element : pipeline_handler->getAllElements()) {
+        pipeline_elements_.push_back(std::make_shared<PipelineElement>(std::move(element)));
+    }
 }
