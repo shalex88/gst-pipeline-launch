@@ -18,8 +18,7 @@ public:
     std::map<std::string, std::string> properties;
     bool optional {false};
     bool enabled {false};
-    // std::shared_ptr<GstElement> gst_element;
-    GstElement* gst_element;
+    std::shared_ptr<GstElement> gst_element;
 
     friend std::ostream& operator<<(std::ostream& os, const PipelineElement& element);
 };
