@@ -6,9 +6,9 @@
 #include <netinet/in.h>
 #include "Logger/Logger.h"
 
-const int MaxBufferSize {1024};
+constexpr int MAX_BUFFER_SIZE {1024};
 
-Ethernet::Ethernet(const std::string &server_ip, int server_port) {
+Ethernet::Ethernet(const std::string &server_ip, const int server_port) {
     LOG_DEBUG("Creating a TCP client");
     client_socket_ = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -23,7 +23,7 @@ Ethernet::Ethernet(const std::string &server_ip, int server_port) {
 }
 
 std::vector<uint8_t> Ethernet::read() {
-    std::vector<uint8_t> buffer(MaxBufferSize);
+    std::vector<uint8_t> buffer(MAX_BUFFER_SIZE);
     const ssize_t bytes_received = recv(client_socket_, buffer.data(), buffer.size(), 0);
     if (bytes_received == -1) {
         return {};
@@ -44,7 +44,7 @@ size_t Ethernet::write(const std::vector<uint8_t> &tx_data) {
 bool Ethernet::init() {
     LOG_DEBUG("Connecting to server...");
 
-    return connect(client_socket_, reinterpret_cast<struct sockaddr*>(&server_address_), sizeof(server_address_)) != -1;
+    return connect(client_socket_, reinterpret_cast<sockaddr*>(&server_address_), sizeof(server_address_)) != -1;
 }
 
 bool Ethernet::deinit() {

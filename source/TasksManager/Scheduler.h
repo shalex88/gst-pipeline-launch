@@ -13,7 +13,7 @@
 
 class Scheduler {
 public:
-    explicit Scheduler(size_t thread_count = 1);
+    explicit Scheduler(const size_t thread_count = 1);
     ~Scheduler();
     void init();
     void deinit();

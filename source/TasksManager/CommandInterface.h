@@ -13,7 +13,7 @@ public:
 class CommandFake : public CommandInterface {
 public:
     ~CommandFake() override = default;
-    void execute(std::shared_ptr<InputInterface::Requester> requester) override {
+    void execute(const std::shared_ptr<InputInterface::Requester> requester) override {
         requester->source->sendResponse(requester, "Ack");
     }
 };

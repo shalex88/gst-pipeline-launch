@@ -6,7 +6,7 @@
 
 class TcpNetworkManager : public NetworkInterface {
 public:
-    explicit TcpNetworkManager(int port);
+    explicit TcpNetworkManager(const int port);
     ~TcpNetworkManager() override = default;
     std::error_code init() override;
     int acceptConnection() override;

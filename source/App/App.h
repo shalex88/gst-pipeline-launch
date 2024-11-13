@@ -13,7 +13,7 @@ class App {
 public:
     App() = default;
     ~App() = default;
-    void run(const AppConfig& config);
+    static void run(const AppConfig& config);
     static void shutdown();
 
 private:

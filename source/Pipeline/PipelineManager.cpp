@@ -1,8 +1,8 @@
-#include "PipelineManager.h"
 #include <utility>
 #include <sstream>
 #include "Pipeline/PipelineHandler.h"
 #include "PipelineElement.h"
+#include "PipelineManager.h"
 
 PipelineManager::PipelineManager(std::string pipeline_file) : pipeline_file_(std::move(pipeline_file)) {
     LOG_TRACE("Pipeline constructor");
@@ -41,7 +41,9 @@ int PipelineManager::linkAllGstElements() const {
 
 int PipelineManager::createGstElement(PipelineElement& element) const {
     element.gst_element = std::shared_ptr<GstElement>(
-        gst_element_factory_make(element.name.c_str(), element.name.c_str()));
+    gst_element_factory_make(element.name.c_str(), element.name.c_str()),
+        [](GstElement*) {
+        });
     if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
         return EXIT_FAILURE;
@@ -92,13 +94,8 @@ int PipelineManager::play() {
     LOG_INFO("Start playing");
     gst_element_set_state(gst_pipeline_.get(), GST_STATE_PLAYING);
 
-    auto bus = std::shared_ptr<GstBus>(gst_element_get_bus(gst_pipeline_.get()), gst_object_unref);
-    gst_bus_add_watch(bus.get(), [](GstBus*, GstMessage* message, gpointer data) -> gboolean {
-        if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_EOS) {
-            return static_cast<PipelineManager*>(data)->stop();
-        }
-        return TRUE;
-    }, this);
+    const auto bus = std::shared_ptr<GstBus>(gst_element_get_bus(gst_pipeline_.get()), gst_object_unref);
+    gst_bus_add_watch(bus.get(), busCallback, this);
 
     gst_loop_ = std::shared_ptr<GMainLoop>(g_main_loop_new(nullptr, FALSE), g_main_loop_unref);
     if (!gst_loop_) {
@@ -112,9 +109,9 @@ int PipelineManager::play() {
 
 int PipelineManager::stop() const {
     if (gst_pipeline_ && gst_loop_) {
-        LOG_INFO("Stop playing");
         g_main_loop_quit(gst_loop_.get());
         gst_element_set_state(gst_pipeline_.get(), GST_STATE_NULL);
+        LOG_INFO("Stop playing");
         return EXIT_SUCCESS;
     }
 
@@ -122,22 +119,42 @@ int PipelineManager::stop() const {
     return EXIT_FAILURE;
 }
 
+gboolean PipelineManager::busCallback(GstBus*, GstMessage* message, gpointer data) {
+    const auto pipeline_manager = static_cast<PipelineManager*>(data);
+    switch (GST_MESSAGE_TYPE(message)) {
+        case GST_MESSAGE_EOS:
+            LOG_INFO("End of stream");
+            return pipeline_manager->stop() == EXIT_SUCCESS ? TRUE : FALSE;
+        case GST_MESSAGE_ERROR:
+            GError* err;
+            gchar* debug;
+            gst_message_parse_error(message, &err, &debug);
+            LOG_ERROR("Error: {}", err->message);
+            g_error_free(err);
+            g_free(debug);
+            return pipeline_manager->stop() == EXIT_SUCCESS ? TRUE : FALSE;
+        default:
+            break;
+    }
+    return TRUE;
+}
+
 std::weak_ptr<PipelineElement> PipelineManager::getPreviousEnabledElement(const PipelineElement& element) const {
     for (auto i = element.id - 1; i < pipeline_elements_.size(); --i) {
         if (pipeline_elements_.at(i) && pipeline_elements_.at(i)->enabled) {
-            return pipeline_elements_.at(i);  // Return a weak_ptr
+            return pipeline_elements_.at(i);
         }
     }
-    return {};  // Return empty weak_ptr if not found
+    return {};
 }
 
 std::weak_ptr<PipelineElement> PipelineManager::getNextEnabledElement(const PipelineElement& element) const {
     for (auto i = element.id + 1; i != pipeline_elements_.size(); ++i) {
         if (pipeline_elements_.at(i) && pipeline_elements_.at(i)->enabled) {
-            return pipeline_elements_.at(i);  // Return a weak_ptr
+            return pipeline_elements_.at(i);
         }
     }
-    return {};  // Return empty weak_ptr if not found
+    return {};
 }
 
 int PipelineManager::enableElement(PipelineElement& element) const {
@@ -145,10 +162,9 @@ int PipelineManager::enableElement(PipelineElement& element) const {
 
     LOG_INFO("Enable element: {}", element.name);
 
-    // gst_bin_remove() unrefs the element so no need to unref it in custom deleter
     element.gst_element = std::shared_ptr<GstElement>(
         gst_element_factory_make(element.name.c_str(), element.name.c_str()),
-        [](GstElement* ptr) {
+        [](GstElement*) {
         });
     if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
@@ -190,14 +206,14 @@ int PipelineManager::disableElement(PipelineElement& element) const {
 
     gst_element_set_state(element.gst_element.get(), GST_STATE_NULL);
 
-    auto src_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element.get(), "src"),
+    const auto src_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element.get(), "src"),
                                            gst_object_unref);
     if (!GST_IS_PAD(src_pad.get())) {
         LOG_ERROR("Failed to get src pad for element {}", element.name);
         return EXIT_FAILURE;
     }
 
-    auto sink_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element.get(), "video_sink"),
+    const auto sink_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element.get(), "video_sink"),
                                             gst_object_unref);
     if (!GST_IS_PAD(sink_pad.get())) {
         LOG_ERROR("Failed to get sink pad for element {}", element.name);
@@ -267,7 +283,7 @@ int PipelineManager::disableAllOptionalPipelineElements() {
 }
 
 int PipelineManager::enableOptionalPipelineElement(const std::string& element_name) {
-    for (auto& element: pipeline_elements_) {
+    for (const auto& element: pipeline_elements_) {
         if (element->name == element_name) {
             if (element->enabled) {
                 LOG_WARN("Element {} is already enabled", element->name);
@@ -280,7 +296,7 @@ int PipelineManager::enableOptionalPipelineElement(const std::string& element_na
 }
 
 int PipelineManager::disableOptionalPipelineElement(const std::string& element_name) {
-    for (auto& element: pipeline_elements_) {
+    for (const auto& element: pipeline_elements_) {
         if (element->name == element_name) {
             if (!element->enabled) {
                 LOG_WARN("Element {} is already disabled", element->name);
@@ -303,7 +319,7 @@ std::vector<std::string> PipelineManager::getOptionalPipelineElementsNames() con
 }
 
 void PipelineManager::createElementsList(const std::string& file_path) {
-    auto pipeline_handler = std::make_unique<PipelineHandler>(file_path);
+    const auto pipeline_handler = std::make_unique<PipelineHandler>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
     for (auto& element : pipeline_handler->getAllElements()) {
         pipeline_elements_.push_back(std::make_shared<PipelineElement>(std::move(element)));

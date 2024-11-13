@@ -21,9 +21,9 @@ std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_p
     if (!exists(pipeline_file)) {
         LOG_ERROR("Pipeline file not found at: {}", pipeline_file.string());
         throw std::runtime_error("Pipeline file not found");
-    } else {
-        LOG_INFO("Provided pipeline file: {}", pipeline_file.string());
     }
+
+    LOG_INFO("Provided pipeline file: {}", pipeline_file.string());
 
     return pipeline_file;
 }
@@ -60,7 +60,7 @@ void App::run(const AppConfig& config) {
     constexpr int tcp_server_port = 12345;
     auto network_manager = std::make_shared<TcpNetworkManager>(tcp_server_port);
 
-    auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
+    const auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
     tcp_server->init();
 
     if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call

@@ -15,7 +15,7 @@ void SignalHandler::resetSignalHandling() {
     std::signal(SIGABRT, SIG_DFL);
 }
 
-void SignalHandler::signalHandler(int signal) {
+void SignalHandler::signalHandler(const int signal) {
     LOG_DEBUG("Signal {} received", signal);
     resetSignalHandling();
     App::shutdown();

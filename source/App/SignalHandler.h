@@ -10,7 +10,7 @@ public:
     static void resetSignalHandling();
 
 private:
-    static void signalHandler(int);
+    static void signalHandler(const int);
 };
 
 #endif //PERIPHERY_MANAGER_SIGNALHANDLER_H

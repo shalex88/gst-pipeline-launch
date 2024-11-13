@@ -16,12 +16,12 @@ public:
     ~MessageServer() override;
     bool init();
     bool deinit();
-    void sendResponse(std::shared_ptr<InputInterface::Requester> requester, const std::string& response) override;
+    void sendResponse(std::shared_ptr<Requester> requester, const std::string& response) override;
 
 private:
     void runServer();
     bool parseMessage(const int client, const std::vector<char>& buffer);
-    std::string printMessage(const int client, const std::vector<char>& buffer) const;
+    static std::string printMessage(const int client, const std::vector<char>& buffer);
     void handleClient(int client_socket);
     void stopAllClientThreads();
     std::shared_ptr<CommandDispatcher> command_dispatcher_;

@@ -29,6 +29,7 @@ private:
     std::weak_ptr<PipelineElement> getNextEnabledElement(const PipelineElement& element) const;
     int enableElement(PipelineElement& element) const;
     int disableElement(PipelineElement& element) const;
+    static gint busCallback(GstBus* bus, GstMessage* message, gpointer data);
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;
