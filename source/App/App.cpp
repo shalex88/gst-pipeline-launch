@@ -1,8 +1,8 @@
 #include "App.h"
 #include <csignal>
 #include <filesystem>
-#include "Gstreamer/Gstreamer.h"
-#include "Gstreamer/PipelineCommands.h"
+#include "Pipeline/PipelineManager.h"
+#include "Pipeline/PipelineCommands.h"
 #include "AppInputs/MessageServer.h"
 #include "Network/TcpNetworkManager.h"
 #include "TasksManager/CommandDispatcher.h"
@@ -35,21 +35,26 @@ void App::run(const AppConfig& config) {
     scheduler->init();
 
     auto pipeline_file = get_pipeline_file_path(config.input_file);
-    auto gstreamer = std::make_shared<Gstreamer>(pipeline_file);
+    auto pipeline_manager = std::make_shared<PipelineManager>(pipeline_file);
 
     auto dispatcher = std::make_shared<CommandDispatcher>(scheduler);
 
-    dispatcher->registerCommand("enable_all", std::make_shared<EnableAllOptionalElementsCommand>(gstreamer));
-    dispatcher->registerCommand("disable_all", std::make_shared<DisableAllOptionalElementsCommand>(gstreamer));
-    dispatcher->registerCommand("stop", std::make_shared<StopPipelineCommand>(gstreamer));
+    dispatcher->registerCommand("enable_all",
+                                std::make_shared<EnableAllOptionalElementsCommand>(pipeline_manager));
+    dispatcher->registerCommand("disable_all",
+                                std::make_shared<DisableAllOptionalElementsCommand>(pipeline_manager));
+    dispatcher->registerCommand("stop",
+                                std::make_shared<StopPipelineCommand>(pipeline_manager));
 
-    for (const auto& optional_element_name: gstreamer->getOptionalPipelineElementsNames()) {
+    for (const auto& optional_element_name: pipeline_manager->getOptionalPipelineElementsNames()) {
         std::string enable_command_name = "enable_" + optional_element_name;
         std::string disable_command_name = "disable_" + optional_element_name;
         dispatcher->registerCommand(enable_command_name,
-                                    std::make_shared<EnableOptionalElementCommand>(gstreamer, optional_element_name));
+                                    std::make_shared<EnableOptionalElementCommand>(
+                                        pipeline_manager, optional_element_name));
         dispatcher->registerCommand(disable_command_name,
-                                    std::make_shared<DisableOptionalElementCommand>(gstreamer, optional_element_name));
+                                    std::make_shared<DisableOptionalElementCommand>(
+                                        pipeline_manager, optional_element_name));
     }
 
     constexpr int tcp_server_port = 12345;
@@ -58,7 +63,9 @@ void App::run(const AppConfig& config) {
     auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
     tcp_server->init();
 
-    gstreamer->play(); // Blocking call
+    if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call
+        LOG_ERROR("Failed to play pipeline");
+    }
 
     LOG_TRACE("Main thread stopped");
 }

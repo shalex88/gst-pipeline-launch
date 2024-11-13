@@ -2,7 +2,7 @@
 #define PIPELINEHANDLER_H
 
 #include <vector>
-#include "Gstreamer/PipelineElement.h"
+#include "Pipeline/PipelineElement.h"
 #include <File/File.h>
 #include "PipelineHandler.h"
 

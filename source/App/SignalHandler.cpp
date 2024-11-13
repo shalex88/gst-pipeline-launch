@@ -17,6 +17,6 @@ void SignalHandler::resetSignalHandling() {
 
 void SignalHandler::signalHandler(int signal) {
     LOG_DEBUG("Signal {} received", signal);
-    SignalHandler::resetSignalHandling();
+    resetSignalHandling();
     App::shutdown();
 }

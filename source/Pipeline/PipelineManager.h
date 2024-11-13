@@ -1,18 +1,18 @@
-#ifndef GSTREAMER_H
-#define GSTREAMER_H
+#ifndef PIPELINEMANAGER_H
+#define PIPELINEMANAGER_H
 
 #include <memory>
 #include <vector>
 #include <mutex>
 #include <gst/gst.h>
-#include "Gstreamer/PipelineElement.h"
+#include "Pipeline/PipelineElement.h"
 
-class Gstreamer {
+class PipelineManager {
 public:
-    explicit Gstreamer(std::string pipeline_file);
-    ~Gstreamer();
-    void play();
-    void stop();
+    explicit PipelineManager(std::string pipeline_file);
+    ~PipelineManager();
+    int play();
+    int stop() const;
     int enableAllOptionalPipelineElements();
     int disableAllOptionalPipelineElements();
     int enableOptionalPipelineElement(const std::string& element_name);
@@ -21,14 +21,14 @@ public:
 
 private:
     int linkAllGstElements();
-    int createGstElement(PipelineElement& element);
+    int createGstElement(PipelineElement& element) const;
     int createGstPipeline(std::vector<PipelineElement>& pipeline);
-    std::vector<PipelineElement> createElementsList(const std::string& file_path);
-    void printElement(const PipelineElement& element);
+    static std::vector<PipelineElement> createElementsList(const std::string& file_path);
+    static void printElement(const PipelineElement& element);
     PipelineElement getPreviousEnabledElement(const PipelineElement& element) const;
     PipelineElement getNextEnabledElement(const PipelineElement& element) const;
-    int enableOptionalElement(PipelineElement& element) const;
-    int disableOptionalElement(PipelineElement& element) const;
+    int enableElement(PipelineElement& element) const;
+    int disableElement(PipelineElement& element) const;
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;
@@ -37,4 +37,4 @@ private:
 };
 
 
-#endif //GSTREAMER_H
+#endif //PIPELINEMANAGER_H

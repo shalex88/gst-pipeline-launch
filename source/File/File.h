@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <string>
-#include "Gstreamer/PipelineElement.h"
 #include "Logger/Logger.h"
 
 class File {
