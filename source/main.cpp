@@ -48,7 +48,7 @@ int main(const int argc, const char* argv[]) {
     try {
         App::run(config);
     } catch (const std::exception& e) {
-        LOG_ERROR("{}", e.what());
+        LOG_CRITICAL("{}", e.what());
         return EXIT_FAILURE;
     }
 

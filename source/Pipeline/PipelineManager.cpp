@@ -16,7 +16,9 @@ PipelineManager::PipelineManager(std::string pipeline_file) : pipeline_file_(std
     }
 
     createElementsList(pipeline_file_);
-    createGstPipeline(pipeline_elements_);
+    if (createGstPipeline(pipeline_elements_) != EXIT_SUCCESS) {
+        throw std::runtime_error("Failed to create pipeline");
+    }
 }
 
 PipelineManager::~PipelineManager() {
@@ -40,6 +42,8 @@ int PipelineManager::linkAllGstElements() {
 }
 
 int PipelineManager::createGstElement(PipelineElement& element) const {
+    printElement(element);
+
     element.gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
     if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
@@ -55,12 +59,11 @@ int PipelineManager::createGstElement(PipelineElement& element) const {
     }
 
     if (!gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
-        LOG_ERROR("Failed to add element {} to pipeline", gst_element_get_name(element.gst_element));
+        LOG_ERROR("Failed to add element {} to pipeline", element.name);
         return EXIT_FAILURE;
     }
 
     element.enabled = true;
-    printElement(element);
 
     return EXIT_SUCCESS;
 }
