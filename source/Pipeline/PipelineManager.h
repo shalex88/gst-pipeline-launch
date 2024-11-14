@@ -20,20 +20,20 @@ public:
     std::vector<std::string> getOptionalPipelineElementsNames() const;
 
 private:
-    int linkAllGstElements() const;
+    int linkAllGstElements();
     int createGstElement(PipelineElement& element) const;
-    int createGstPipeline(std::vector<std::shared_ptr<PipelineElement>>& pipeline) const;
+    int createGstPipeline(std::vector<PipelineElement>& pipeline);
     void createElementsList(const std::string& file_path);
     static void printElement(const PipelineElement& element);
-    std::weak_ptr<PipelineElement> getPreviousEnabledElement(const PipelineElement& element) const;
-    std::weak_ptr<PipelineElement> getNextEnabledElement(const PipelineElement& element) const;
-    int enableElement(PipelineElement& element) const;
-    int disableElement(PipelineElement& element) const;
+    PipelineElement* getPreviousEnabledElement(const PipelineElement& element);
+    PipelineElement* getNextEnabledElement(const PipelineElement& element);
+    int enableElement(PipelineElement& element);
+    int disableElement(PipelineElement& element);
     static gint busCallback(GstBus* bus, GstMessage* message, gpointer data);
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;
-    std::vector<std::shared_ptr<PipelineElement>> pipeline_elements_;
+    std::vector<PipelineElement> pipeline_elements_;
     mutable std::mutex mutex_;
 };
 

@@ -10,15 +10,15 @@
 
 class PipelineElement {
 public:
-    PipelineElement();
+    PipelineElement() = delete;
     PipelineElement(unsigned int id, std::string name, std::map<std::string, std::string> properties,
-                    bool optional, bool enabled, const std::shared_ptr<GstElement> gst_element);
+                    bool optional, bool enabled, GstElement* gst_element);
     unsigned int id {std::numeric_limits<unsigned int>::max()};
     std::string name {};
     std::map<std::string, std::string> properties;
     bool optional {false};
     bool enabled {false};
-    std::shared_ptr<GstElement> gst_element;
+    GstElement* gst_element {nullptr};;
 
     friend std::ostream& operator<<(std::ostream& os, const PipelineElement& element);
 };
