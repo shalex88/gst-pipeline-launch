@@ -1,3 +1,0 @@
-videotestsrc
-timeoverlay
-autovideosink

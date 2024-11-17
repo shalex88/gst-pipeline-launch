@@ -1,0 +1,71 @@
+#include "App.h"
+#include <csignal>
+#include <filesystem>
+#include "Pipeline/PipelineManager.h"
+#include "Pipeline/PipelineCommands.h"
+#include "AppInputs/MessageServer.h"
+#include "Network/TcpNetworkManager.h"
+#include "TasksManager/CommandDispatcher.h"
+#include "TasksManager/Scheduler.h"
+#include "App/SignalHandler.h"
+
+std::atomic<bool> App::keep_running_ = true;
+
+void App::shutdown() {
+    keep_running_ = false;
+    LOG_INFO("Terminating...");
+}
+
+std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_path) {
+    std::filesystem::path pipeline_file = std::filesystem::current_path() / file_path;
+    if (!exists(pipeline_file)) {
+        LOG_ERROR("Pipeline file not found at: {}", pipeline_file.string());
+        throw std::runtime_error("Pipeline file not found");
+    }
+
+    LOG_INFO("Provided pipeline file: {}", pipeline_file.string());
+
+    return pipeline_file;
+}
+
+void App::run(const AppConfig& config) {
+    // SignalHandler::setupSignalHandling(); //FIXME:
+
+    auto scheduler = std::make_shared<Scheduler>();
+    scheduler->init();
+
+    auto pipeline_file = get_pipeline_file_path(config.input_file);
+    auto pipeline_manager = std::make_shared<PipelineManager>(pipeline_file);
+
+    auto dispatcher = std::make_shared<CommandDispatcher>(scheduler);
+
+    dispatcher->registerCommand("enable_all",
+                                std::make_shared<EnableAllOptionalElementsCommand>(pipeline_manager));
+    dispatcher->registerCommand("disable_all",
+                                std::make_shared<DisableAllOptionalElementsCommand>(pipeline_manager));
+    dispatcher->registerCommand("stop",
+                                std::make_shared<StopPipelineCommand>(pipeline_manager));
+
+    for (const auto& optional_element_name: pipeline_manager->getOptionalPipelineElementsNames()) {
+        std::string enable_command_name = "enable_" + optional_element_name;
+        std::string disable_command_name = "disable_" + optional_element_name;
+        dispatcher->registerCommand(enable_command_name,
+                                    std::make_shared<EnableOptionalElementCommand>(
+                                        pipeline_manager, optional_element_name));
+        dispatcher->registerCommand(disable_command_name,
+                                    std::make_shared<DisableOptionalElementCommand>(
+                                        pipeline_manager, optional_element_name));
+    }
+
+    constexpr int tcp_server_port = 12345;
+    auto network_manager = std::make_shared<TcpNetworkManager>(tcp_server_port);
+
+    const auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
+    tcp_server->init();
+
+    if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call
+        LOG_ERROR("Failed to play pipeline");
+    }
+
+    LOG_TRACE("Main thread stopped");
+}

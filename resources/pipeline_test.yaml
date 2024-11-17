@@ -1,0 +1,11 @@
+pipeline:
+  elements:
+    - name: videotestsrc
+      properties:
+        pattern: smpte
+        num-buffers: 50
+    - name: capsfilter
+      properties:
+        caps: video/x-raw,width=1920,height=1080,framerate=30/1
+    - name: timeoverlay
+    - name: autovideosink

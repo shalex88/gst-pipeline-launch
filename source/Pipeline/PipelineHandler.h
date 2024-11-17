@@ -2,7 +2,7 @@
 #define PIPELINEHANDLER_H
 
 #include <vector>
-#include "Gstreamer/PipelineElement.h"
+#include "Pipeline/PipelineElement.h"
 #include <File/File.h>
 #include "PipelineHandler.h"
 
@@ -10,7 +10,7 @@ class PipelineHandler {
 public:
     explicit PipelineHandler(const std::string& file_name);
     ~PipelineHandler();
-    std::vector<PipelineElement> get_all_elements() const;
+    std::vector<PipelineElement> getAllElements() const;
 private:
     std::unique_ptr<File> file_;
 };
