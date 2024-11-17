@@ -1,9 +1,4 @@
-#include <memory>
-#include <iostream>
 #include <filesystem>
-#include <thread>
-#include <sys/select.h>
-#include <unistd.h>
 #include "Logger/Logger.h"
 #include "cxxopts.hpp"
 #include "App/App.h"

@@ -1,15 +1,15 @@
-#include "PipelineHandler.h"
+#include "PipelineParser.h"
 #include <yaml-cpp/yaml.h>
 
-PipelineHandler::PipelineHandler(const std::string& file_name) : file_(std::make_unique<File>(file_name)) {
-    LOG_TRACE("PipelineHandler constructor");
+PipelineParser::PipelineParser(const std::string& file_name) : file_(std::make_unique<File>(file_name)) {
+    LOG_TRACE("PipelineParser constructor");
 }
 
-PipelineHandler::~PipelineHandler() {
-    LOG_TRACE("PipelineHandler destructor");
+PipelineParser::~PipelineParser() {
+    LOG_TRACE("PipelineParser destructor");
 }
 
-std::vector<PipelineElement> PipelineHandler::getAllElements() const {
+std::vector<PipelineElement> PipelineParser::getAllElements() const {
     auto yaml_data = YAML::Load(file_->getContent());
 
     std::vector<PipelineElement> all_elements;
@@ -18,6 +18,9 @@ std::vector<PipelineElement> PipelineHandler::getAllElements() const {
         all_elements.emplace_back(
             id++,
             element["name"].as<std::string>(),
+            element["type"].IsDefined()
+                ? element["type"].as<std::string>()
+                : "unknown",
             element["properties"].IsDefined()
                 ? element["properties"].as<std::map<std::string, std::string> >()
                 : std::map<std::string, std::string>(),

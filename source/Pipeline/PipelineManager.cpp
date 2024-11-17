@@ -1,6 +1,6 @@
 #include <utility>
 #include <sstream>
-#include "Pipeline/PipelineHandler.h"
+#include "Pipeline/PipelineParser.h"
 #include "PipelineElement.h"
 #include "PipelineManager.h"
 
@@ -25,6 +25,7 @@ PipelineManager::~PipelineManager() {
     LOG_TRACE("Pipeline destructor");
 }
 
+ // element.gst_element->num_src_pads > 0
 int PipelineManager::linkAllGstElements() {
     for (auto& element: pipeline_elements_) {
         if (element.enabled) {
@@ -316,7 +317,7 @@ std::vector<std::string> PipelineManager::getOptionalPipelineElementsNames() con
 }
 
 void PipelineManager::createElementsList(const std::string& file_path) {
-    const auto pipeline_handler = std::make_unique<PipelineHandler>(file_path);
+    const auto pipeline_handler = std::make_unique<PipelineParser>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
     pipeline_elements_ = pipeline_handler->getAllElements();
 }
