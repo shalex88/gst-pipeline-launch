@@ -16,16 +16,13 @@ PipelineManager::PipelineManager(std::string pipeline_file) : pipeline_file_(std
     }
 
     createElementsList(pipeline_file_);
-    if (createGstPipeline(pipeline_elements_) != EXIT_SUCCESS) {
-        throw std::runtime_error("Failed to create pipeline");
-    }
 }
 
 PipelineManager::~PipelineManager() {
     LOG_TRACE("Pipeline destructor");
 }
 
- // element.gst_element->num_src_pads > 0
+ // TODO: check element.gst_element->num_src_pads > 0
 int PipelineManager::linkAllGstElements() {
     for (auto& element: pipeline_elements_) {
         if (element.enabled) {
@@ -92,6 +89,10 @@ void PipelineManager::printElement(const PipelineElement& element) {
 }
 
 int PipelineManager::play() {
+    if (createGstPipeline(pipeline_elements_) != EXIT_SUCCESS) {
+        throw std::runtime_error("Failed to create pipeline");
+    }
+
     LOG_INFO("Start playing");
     gst_element_set_state(gst_pipeline_.get(), GST_STATE_PLAYING);
 
@@ -141,7 +142,7 @@ gboolean PipelineManager::busCallback(GstBus*, GstMessage* message, gpointer dat
 }
 
 PipelineElement* PipelineManager::getPreviousEnabledElement(const PipelineElement& element) {
-    for (auto i = element.id - 1; i < pipeline_elements_.size(); --i) {
+    for (auto i = element.id.first - 1; i < pipeline_elements_.size(); --i) {
         if (pipeline_elements_.at(i).enabled) {
             return &pipeline_elements_.at(i);
         }
@@ -150,7 +151,7 @@ PipelineElement* PipelineManager::getPreviousEnabledElement(const PipelineElemen
 }
 
 PipelineElement* PipelineManager::getNextEnabledElement(const PipelineElement& element) {
-    for (auto i = element.id + 1; i != pipeline_elements_.size(); ++i) {
+    for (auto i = element.id.first + 1; i != pipeline_elements_.size(); ++i) {
         if (pipeline_elements_.at(i).enabled) {
             return &pipeline_elements_.at(i);
         }
@@ -320,4 +321,24 @@ void PipelineManager::createElementsList(const std::string& file_path) {
     const auto pipeline_handler = std::make_unique<PipelineParser>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
     pipeline_elements_ = pipeline_handler->getAllElements();
+}
+
+void PipelineManager::printPipeline() {
+    std::ostringstream oss;
+
+    for (const auto& element: pipeline_elements_) {
+        oss << element.name;
+        oss << " (";
+        oss << element.id.first;
+        oss << ",";
+        oss << element.id.second;
+        oss << ")";
+        if (element.type != "sink") {
+            oss << " -> ";
+        } else {
+            oss << std::endl;
+        }
+    }
+
+    LOG_INFO("\n{}", oss.str());
 }

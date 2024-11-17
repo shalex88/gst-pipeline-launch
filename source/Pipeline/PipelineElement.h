@@ -11,9 +11,9 @@
 class PipelineElement {
 public:
     PipelineElement() = delete;
-    PipelineElement(unsigned int id, std::string name, std::string type, std::map<std::string, std::string> properties,
+    PipelineElement(const unsigned int idx, const unsigned int idy, std::string name, std::string type, std::map<std::string, std::string> properties,
                     bool optional, bool enabled, GstElement* gst_element);
-    unsigned int id {std::numeric_limits<unsigned int>::max()};
+    std::pair<unsigned int, unsigned int> id {std::numeric_limits<unsigned int>::max(), std::numeric_limits<unsigned int>::max()};
     std::string name {};
     std::string type {};
     std::map<std::string, std::string> properties;

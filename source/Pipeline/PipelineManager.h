@@ -18,6 +18,7 @@ public:
     int enableOptionalPipelineElement(const std::string& element_name);
     int disableOptionalPipelineElement(const std::string& element_name);
     std::vector<std::string> getOptionalPipelineElementsNames() const;
+    void printPipeline();
 
 private:
     int linkAllGstElements();
