@@ -18,33 +18,87 @@ PipelineManager::PipelineManager(std::string pipeline_file) : pipeline_file_(std
     createElementsList(pipeline_file_);
 }
 
+int PipelineManager::linkTeeToElement(PipelineElement* tee, PipelineElement* sink) {
+    if (!GST_IS_ELEMENT(tee->gst_element) || !GST_IS_ELEMENT(sink->gst_element)) {
+        LOG_ERROR("One or more elements are invalid");
+        return EXIT_FAILURE;
+    }
+
+    // Request a new source pad from the tee
+    auto tee_src_pad = gst_element_request_pad_simple(tee->gst_element, "src_%u");
+    if (!tee_src_pad) {
+        LOG_ERROR("Failed to request a new pad from {}", tee->name);
+        return EXIT_FAILURE;
+    }
+
+    // Get the sink pad of the downstream element
+    auto sink_pad = gst_element_get_static_pad(sink->gst_element, "sink");
+    if (!sink_pad) {
+        sink_pad = gst_element_get_static_pad(sink->gst_element, "video_sink");
+        if (!sink_pad) {
+            LOG_ERROR("Failed to get the sink pad of the {}", sink->name);
+            return EXIT_FAILURE;
+        }
+    }
+
+    // Link the tee's src pad to the sink pad
+    if (gst_pad_link(tee_src_pad, sink_pad) != GST_PAD_LINK_OK) {
+        LOG_ERROR("Failed to link tee to element");
+        gst_object_unref(tee_src_pad);
+        gst_object_unref(sink_pad);
+        return EXIT_FAILURE;
+    }
+
+    // Unref pads to release references
+    gst_object_unref(tee_src_pad);
+    gst_object_unref(sink_pad);
+
+    return EXIT_SUCCESS;
+}
+
 PipelineManager::~PipelineManager() {
     LOG_TRACE("Pipeline destructor");
 }
 
- // TODO: check element.gst_element->num_src_pads > 0
 int PipelineManager::linkAllGstElements() {
-    for (auto& element: pipeline_elements_) {
-        if (element.enabled) {
-            auto next_element = getNextEnabledElement(element);
-            auto prev_element = getPreviousEnabledElement(element);
-            if (next_element && next_element->gst_element) {
-                if (element.branch == next_element->branch) { // any element inside the branch that is not sink
-                    if (!gst_element_link(element.gst_element, next_element->gst_element)) {
-                        LOG_ERROR("Failed to link element {} to {}", element.name, next_element->name);
-                        return EXIT_FAILURE;
-                    }
-                } else if (element.branch != prev_element->branch) { //first element in branch
-                    auto tee = findTeeElement(element.branch);
-                    // TODO: check if tee has free pads
-                    if (!gst_element_link(tee.gst_element, element.gst_element)) {
-                        LOG_ERROR("Failed to link element {} to {}", tee.name, element.name);
-                        return EXIT_FAILURE;
-                    }
-                } else { //next, when current element is sink
+    LOG_TRACE("Link all default elements");
 
+    for (auto& current_element: pipeline_elements_) {
+        if (current_element.enabled) {
+            auto next_element = getNextEnabledElement(current_element);
+            auto prev_element = getPreviousEnabledElement(current_element);
+
+            if (next_element && next_element->gst_element) {
+                if (current_element.name == "tee") { // link tee to next element
+                    if (linkTeeToElement(&current_element, next_element) == EXIT_SUCCESS) {
+                        LOG_INFO("Linked {} to {}", current_element.name, next_element->name);
+                    } else {
+                        LOG_ERROR("Failed to link {} to {}", current_element.name, next_element->name);
+                        return EXIT_FAILURE;
+                    }
+                } else if (current_element.branch == next_element->branch) { // any element inside the branch that is not sink
+                    if (gst_element_link(current_element.gst_element, next_element->gst_element)) {
+                        LOG_INFO("Linked {} to {}", current_element.name, next_element->name);
+                    } else {
+                        LOG_ERROR("Failed to link element {} to {}", current_element.name, next_element->name);
+                        return EXIT_FAILURE;
+                    }
                 }
             }
+
+            if (prev_element && prev_element->gst_element) { //first element in branch
+                if (current_element.branch != prev_element->branch) {
+                    auto tee = findTeeElement(current_element.branch);
+                    if (linkTeeToElement(&tee, &current_element) == EXIT_SUCCESS) {
+                        LOG_INFO("Linked {} to {}", tee.name, current_element.name);
+                    } else {
+                        LOG_ERROR("Failed to link {} to {}", tee.name, current_element.name);
+                        return EXIT_FAILURE;
+                    }
+                }
+            }
+
+            //next, when current element is sink
         }
     }
 
@@ -98,7 +152,11 @@ int PipelineManager::createGstPipeline(std::vector<PipelineElement>& pipeline) {
 
 void PipelineManager::printElementName(const PipelineElement& element) {
     std::ostringstream oss;
-    oss << element;
+    oss << element.name << " (" << element.branch;
+    if (element.name == "tee") {
+        oss << ", " << element.type << " start";
+    }
+    oss << ")";
     LOG_INFO("Enable element: {}", oss.str());
 }
 
@@ -337,34 +395,12 @@ void PipelineManager::createElementsList(const std::string& file_path) {
     pipeline_elements_ = pipeline_handler->getAllElements();
 }
 
-void PipelineManager::printPipeline() {
-    std::ostringstream oss;
-
-    for (const auto& element: pipeline_elements_) {
-        oss << element.name;
-        oss << " (";
-        oss << element.id;
-        oss << ",";
-        oss << element.branch;
-        if (element.type == "tee") {
-            oss << ",";
-            oss << element.type;
-        }
-        oss << ")";
-        if (element.type != "sink") {
-            oss << " -> ";
-        } else {
-            oss << std::endl;
-        }
-    }
-
-    LOG_INFO("\n{}", oss.str());
-}
-
 PipelineElement& PipelineManager::findTeeElement(const std::string& branch_name) {
     for (auto& element: pipeline_elements_) {
-        if (element.name == "tee" && element.branch == branch_name) {
+        if (element.name == "tee" && element.type == branch_name) {
             return element;
         }
     }
+
+    throw std::runtime_error("Tee element not found");
 }

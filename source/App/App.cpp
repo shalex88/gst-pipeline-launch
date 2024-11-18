@@ -33,7 +33,6 @@ void App::run(const AppConfig& config) {
 
     // gst_debug_set_default_threshold(GST_LEVEL_INFO);
 
-
     auto scheduler = std::make_shared<Scheduler>();
     scheduler->init();
 
@@ -68,7 +67,6 @@ void App::run(const AppConfig& config) {
     const auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
     tcp_server->init();
 
-    pipeline_manager->printPipeline();
     if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call
         LOG_ERROR("Failed to play pipeline");
     }
