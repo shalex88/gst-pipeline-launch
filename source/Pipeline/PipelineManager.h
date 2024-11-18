@@ -21,11 +21,12 @@ public:
     void printPipeline();
 
 private:
+    PipelineElement& findTeeElement(const std::string& string);
     int linkAllGstElements();
     int createGstElement(PipelineElement& element) const;
     int createGstPipeline(std::vector<PipelineElement>& pipeline);
     void createElementsList(const std::string& file_path);
-    static void printElement(const PipelineElement& element);
+    static void printElementName(const PipelineElement& element);
     PipelineElement* getPreviousEnabledElement(const PipelineElement& element);
     PipelineElement* getNextEnabledElement(const PipelineElement& element);
     int enableElement(PipelineElement& element);

@@ -11,31 +11,20 @@ pipeline:
         - name: timeoverlay
           optional: true
         - name: tee
-          type: BranchA
+          type: atr_tee
         - name: autovideosink
-          type: sink
 
-    - name: BranchA
+    - name: atr_tee
       elements:
         - name: metadatainjector
           optional: true
         - name: tee
-          type: BranchA
+          type: vmd_tee
         - name: metadataextractor
           optional: true
         - name: autovideosink
-          type: sink
-
-    - name: BranchB
-      elements:
-        - name: metadataextractor
-          optional: true
-        - name: tee
-          type: BranchA
-        - name: autovideosink
-          type: sink
-
-    - name: BranchC
-      elements:
-        - name: autovideosink
-          type: sink
+#
+#    - name: vmd_tee
+#      elements:
+#        - name: timeoverlay
+#        - name: autovideosink

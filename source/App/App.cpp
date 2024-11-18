@@ -31,6 +31,9 @@ std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_p
 void App::run(const AppConfig& config) {
     // SignalHandler::setupSignalHandling(); //FIXME:
 
+    // gst_debug_set_default_threshold(GST_LEVEL_INFO);
+
+
     auto scheduler = std::make_shared<Scheduler>();
     scheduler->init();
 
@@ -39,6 +42,8 @@ void App::run(const AppConfig& config) {
 
     auto dispatcher = std::make_shared<CommandDispatcher>(scheduler);
 
+
+    // TODO: Fix cretain commands for multiple elements with the same name
     dispatcher->registerCommand("enable_all",
                                 std::make_shared<EnableAllOptionalElementsCommand>(pipeline_manager));
     dispatcher->registerCommand("disable_all",
@@ -64,9 +69,9 @@ void App::run(const AppConfig& config) {
     tcp_server->init();
 
     pipeline_manager->printPipeline();
-    // if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call
-    //     LOG_ERROR("Failed to play pipeline");
-    // }
+    if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call
+        LOG_ERROR("Failed to play pipeline");
+    }
 
     LOG_TRACE("Main thread stopped");
 }

@@ -27,10 +27,22 @@ int PipelineManager::linkAllGstElements() {
     for (auto& element: pipeline_elements_) {
         if (element.enabled) {
             auto next_element = getNextEnabledElement(element);
+            auto prev_element = getPreviousEnabledElement(element);
             if (next_element && next_element->gst_element) {
-                if (!gst_element_link(element.gst_element, next_element->gst_element)) {
-                    LOG_ERROR("Failed to link element {} to {}", element.name, next_element->name);
-                    return EXIT_FAILURE;
+                if (element.branch == next_element->branch) { // any element inside the branch that is not sink
+                    if (!gst_element_link(element.gst_element, next_element->gst_element)) {
+                        LOG_ERROR("Failed to link element {} to {}", element.name, next_element->name);
+                        return EXIT_FAILURE;
+                    }
+                } else if (element.branch != prev_element->branch) { //first element in branch
+                    auto tee = findTeeElement(element.branch);
+                    // TODO: check if tee has free pads
+                    if (!gst_element_link(tee.gst_element, element.gst_element)) {
+                        LOG_ERROR("Failed to link element {} to {}", tee.name, element.name);
+                        return EXIT_FAILURE;
+                    }
+                } else { //next, when current element is sink
+
                 }
             }
         }
@@ -40,9 +52,11 @@ int PipelineManager::linkAllGstElements() {
 }
 
 int PipelineManager::createGstElement(PipelineElement& element) const {
-    printElement(element);
+    printElementName(element);
+    // TODO: handle the case when there are multiple elements with the same name in the same branch
+    auto unique_gst_element_name = element.name + element.branch;
 
-    element.gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
+    element.gst_element = gst_element_factory_make(element.name.c_str(), unique_gst_element_name.c_str());
     if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.name);
         return EXIT_FAILURE;
@@ -82,7 +96,7 @@ int PipelineManager::createGstPipeline(std::vector<PipelineElement>& pipeline) {
     return EXIT_SUCCESS;
 }
 
-void PipelineManager::printElement(const PipelineElement& element) {
+void PipelineManager::printElementName(const PipelineElement& element) {
     std::ostringstream oss;
     oss << element;
     LOG_INFO("Enable element: {}", oss.str());
@@ -332,6 +346,10 @@ void PipelineManager::printPipeline() {
         oss << element.id;
         oss << ",";
         oss << element.branch;
+        if (element.type == "tee") {
+            oss << ",";
+            oss << element.type;
+        }
         oss << ")";
         if (element.type != "sink") {
             oss << " -> ";
@@ -341,4 +359,12 @@ void PipelineManager::printPipeline() {
     }
 
     LOG_INFO("\n{}", oss.str());
+}
+
+PipelineElement& PipelineManager::findTeeElement(const std::string& branch_name) {
+    for (auto& element: pipeline_elements_) {
+        if (element.name == "tee" && element.branch == branch_name) {
+            return element;
+        }
+    }
 }
