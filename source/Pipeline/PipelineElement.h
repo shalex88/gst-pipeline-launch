@@ -11,15 +11,16 @@
 class PipelineElement {
 public:
     PipelineElement() = delete;
-    PipelineElement(const unsigned int idx, const unsigned int idy, std::string name, std::string type, std::map<std::string, std::string> properties,
+    PipelineElement(const unsigned int id, std::string name, std::string type, std::string branch, std::map<std::string, std::string> properties,
                     bool optional, bool enabled, GstElement* gst_element);
-    std::pair<unsigned int, unsigned int> id {std::numeric_limits<unsigned int>::max(), std::numeric_limits<unsigned int>::max()};
+    unsigned int id {std::numeric_limits<unsigned int>::max()};
     std::string name {};
     std::string type {};
+    std::string branch {};
     std::map<std::string, std::string> properties;
     bool optional {false};
     bool enabled {false};
-    GstElement* gst_element {nullptr};;
+    GstElement* gst_element {nullptr};
 
     friend std::ostream& operator<<(std::ostream& os, const PipelineElement& element);
 };

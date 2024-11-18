@@ -4,6 +4,7 @@
 #include <vector>
 #include "Pipeline/PipelineElement.h"
 #include <File/File.h>
+#include <yaml-cpp/yaml.h>
 
 class PipelineParser {
 public:
@@ -12,6 +13,7 @@ public:
     std::vector<PipelineElement> getAllElements() const;
 private:
     std::unique_ptr<File> file_;
+    static PipelineElement deserializeElement(const YAML::detail::iterator_value& element, std::string branch);
 };
 
 #endif //PIPELINEPARSER_H

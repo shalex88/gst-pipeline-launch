@@ -142,7 +142,7 @@ gboolean PipelineManager::busCallback(GstBus*, GstMessage* message, gpointer dat
 }
 
 PipelineElement* PipelineManager::getPreviousEnabledElement(const PipelineElement& element) {
-    for (auto i = element.id.first - 1; i < pipeline_elements_.size(); --i) {
+    for (auto i = element.id - 1; i < pipeline_elements_.size(); --i) {
         if (pipeline_elements_.at(i).enabled) {
             return &pipeline_elements_.at(i);
         }
@@ -151,7 +151,7 @@ PipelineElement* PipelineManager::getPreviousEnabledElement(const PipelineElemen
 }
 
 PipelineElement* PipelineManager::getNextEnabledElement(const PipelineElement& element) {
-    for (auto i = element.id.first + 1; i != pipeline_elements_.size(); ++i) {
+    for (auto i = element.id + 1; i != pipeline_elements_.size(); ++i) {
         if (pipeline_elements_.at(i).enabled) {
             return &pipeline_elements_.at(i);
         }
@@ -329,9 +329,9 @@ void PipelineManager::printPipeline() {
     for (const auto& element: pipeline_elements_) {
         oss << element.name;
         oss << " (";
-        oss << element.id.first;
+        oss << element.id;
         oss << ",";
-        oss << element.id.second;
+        oss << element.branch;
         oss << ")";
         if (element.type != "sink") {
             oss << " -> ";
