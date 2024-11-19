@@ -11,23 +11,26 @@ class PipelineManager {
 public:
     explicit PipelineManager(std::string pipeline_file);
     ~PipelineManager();
-    static int linkTeeToElement(const PipelineElement* tee, const PipelineElement* sink);
     int play();
     int stop() const;
-    int enableAllOptionalPipelineElements();
-    int disableAllOptionalPipelineElements();
     int enableOptionalPipelineElement(const std::string& element_name);
     int disableOptionalPipelineElement(const std::string& element_name);
+    int enableAllOptionalPipelineElements();
+    int disableAllOptionalPipelineElements();
+    int enableAllOptionalPipelineBranches();
+    int disableAllOptionalPipelineBranches();
     std::vector<std::string> getOptionalPipelineElementsNames() const;
 
 private:
-    PipelineElement& findTeeElementForBranch(const std::string& string);
+    PipelineElement& findTeeElementForBranch(const std::string& branch_name);
     int linkAllGstElements();
     int createGstElement(PipelineElement& element) const;
     int createGstPipeline(std::vector<PipelineElement>& pipeline);
     void createElementsList(const std::string& file_path);
     PipelineElement* getPreviousEnabledElement(const PipelineElement& element);
     PipelineElement* getNextEnabledElement(const PipelineElement& element);
+    int linkGstElement(const PipelineElement& element);
+    static int linkTeeToElement(const PipelineElement* tee, const PipelineElement* sink);
     int enableElement(PipelineElement& element);
     int disableElement(PipelineElement& element);
     static gint busCallback(GstBus* bus, GstMessage* message, gpointer data);

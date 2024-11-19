@@ -32,6 +32,22 @@ void DisableAllOptionalElementsCommand::execute(const std::shared_ptr<InputInter
     requester->source->sendResponse(requester, response);
 }
 
+void EnableAllOptionalBranchesCommand::execute(const std::shared_ptr<InputInterface::Requester> requester) {
+    std::string response = "Ack";
+    if (component_->enableAllOptionalPipelineBranches() != EXIT_SUCCESS) {
+        response = "Nack";
+    }
+    requester->source->sendResponse(requester, response);
+}
+
+void DisableAllOptionalBranchesCommand::execute(const std::shared_ptr<InputInterface::Requester> requester) {
+    std::string response = "Ack";
+    if (component_->disableAllOptionalPipelineBranches() != EXIT_SUCCESS) {
+        response = "Nack";
+    }
+    requester->source->sendResponse(requester, response);
+}
+
 void StopPipelineCommand::execute(const std::shared_ptr<InputInterface::Requester> requester) {
     requester->source->sendResponse(requester, "Ack");
     component_->stop();

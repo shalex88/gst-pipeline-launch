@@ -45,10 +45,14 @@ void App::run(const AppConfig& config) {
 
 
     // TODO: Fix cretain commands for multiple elements with the same name
-    dispatcher->registerCommand("enable_all",
+    dispatcher->registerCommand("enable_elements",
                                 std::make_shared<EnableAllOptionalElementsCommand>(pipeline_manager));
-    dispatcher->registerCommand("disable_all",
+    dispatcher->registerCommand("disable_elements",
                                 std::make_shared<DisableAllOptionalElementsCommand>(pipeline_manager));
+    dispatcher->registerCommand("enable_branches",
+                                std::make_shared<EnableAllOptionalBranchesCommand>(pipeline_manager));
+    dispatcher->registerCommand("disable_branches",
+                                std::make_shared<DisableAllOptionalBranchesCommand>(pipeline_manager));
     dispatcher->registerCommand("stop",
                                 std::make_shared<StopPipelineCommand>(pipeline_manager));
 

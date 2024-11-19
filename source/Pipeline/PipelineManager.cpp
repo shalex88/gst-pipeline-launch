@@ -76,6 +76,14 @@ PipelineManager::~PipelineManager() {
     LOG_TRACE("Pipeline destructor");
 }
 
+int PipelineManager::enableAllOptionalPipelineBranches() {
+    return EXIT_SUCCESS;
+}
+
+int PipelineManager::disableAllOptionalPipelineBranches() {
+    return EXIT_SUCCESS;
+}
+
 int PipelineManager::linkAllGstElements() {
     LOG_TRACE("Link all default elements");
 
@@ -87,18 +95,16 @@ int PipelineManager::linkAllGstElements() {
             if (next_element && next_element->gst_element) {
                 if (current_element.name == "tee") { // link tee to next element
                     if (linkTeeToElement(&current_element, next_element) == EXIT_SUCCESS) {
-                        LOG_INFO("Linked {}({}) to {}({})", current_element.name, current_element.branch,
-                                 next_element->name, next_element->branch);
+                        LOG_INFO("Linked {} to {}", current_element.toString(), next_element->toString());
                     } else {
-                        LOG_ERROR("Failed to link {}({}) to {}({})", current_element.name, current_element.branch,
-                                 next_element->name, next_element->branch);
+                        LOG_ERROR("Failed to link {} to {}", current_element.toString(), next_element->toString());
                         return EXIT_FAILURE;
                     }
                 } else if (current_element.branch == next_element->branch) { // any element inside the branch that is not sink
                     if (gst_element_link(current_element.gst_element, next_element->gst_element)) {
-                        LOG_INFO("Linked {} to {}", current_element.name, next_element->name);
+                        LOG_INFO("Linked {} to {}", current_element.toString(), next_element->toString());
                     } else {
-                        LOG_ERROR("Failed to link element {} to {}", current_element.name, next_element->name);
+                        LOG_ERROR("Failed to link {} to {}", current_element.toString(), next_element->toString());
                         return EXIT_FAILURE;
                     }
                 }
@@ -108,11 +114,9 @@ int PipelineManager::linkAllGstElements() {
                 if (current_element.branch != prev_element->branch) {
                     auto tee = findTeeElementForBranch(current_element.branch);
                     if (linkTeeToElement(&tee, &current_element) == EXIT_SUCCESS) {
-                        LOG_INFO("Linked {}({}) to {}({})", tee.name, tee.branch, current_element.name,
-                                 current_element.branch);
+                        LOG_INFO("Linked {} to {}", tee.toString(), current_element.toString());
                     } else {
-                        LOG_ERROR("Failed to link {}({}) to {}({})", tee.name, tee.branch, current_element.name,
-                                  current_element.branch);
+                        LOG_ERROR("Failed to link {} to {}", tee.toString(), current_element.toString());
                         return EXIT_FAILURE;
                     }
                 }
@@ -126,17 +130,18 @@ int PipelineManager::linkAllGstElements() {
 }
 
 int PipelineManager::createGstElement(PipelineElement& element) const {
-    LOG_INFO("Enable element: {}", element.print());
+    LOG_INFO("Enable element: {}", element.toString());
+
     // TODO: handle the case when there are multiple elements with the same name in the same branch
     auto unique_gst_element_name = element.name + std::to_string(element.id);
 
     element.gst_element = gst_element_factory_make(element.name.c_str(), unique_gst_element_name.c_str());
     if (!element.gst_element) {
-        LOG_ERROR("Failed to create pipeline element {}", element.name);
+        LOG_ERROR("Failed to create pipeline element {}", element.toString());
         return EXIT_FAILURE;
     }
     if (!GST_IS_ELEMENT(element.gst_element)) {
-        LOG_ERROR("Non valid pipeline element {}", element.name);
+        LOG_ERROR("Non valid pipeline element {}", element.toString());
         return EXIT_FAILURE;
     }
 
@@ -145,7 +150,7 @@ int PipelineManager::createGstElement(PipelineElement& element) const {
     }
 
     if (!gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
-        LOG_ERROR("Failed to add element {} to pipeline", element.name);
+        LOG_ERROR("Failed to add element {} to pipeline", element.toString());
         return EXIT_FAILURE;
     }
 
@@ -241,21 +246,7 @@ PipelineElement* PipelineManager::getNextEnabledElement(const PipelineElement& e
     return {};
 }
 
-int PipelineManager::enableElement(PipelineElement& element) {
-    std::lock_guard lock_guard(mutex_);
-
-    LOG_INFO("Enable element: {}", element.print());
-
-    element.gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
-    if (!element.gst_element) {
-        LOG_ERROR("Failed to create pipeline element {}", element.name);
-        return EXIT_FAILURE;
-    }
-    if (!GST_IS_ELEMENT(element.gst_element)) {
-        LOG_ERROR("Non valid pipeline element {}", element.name);
-        return EXIT_FAILURE;
-    }
-
+int PipelineManager::linkGstElement(const PipelineElement& element) {
     const auto previous_enabled_element = getPreviousEnabledElement(element);
     if (!previous_enabled_element || !GST_IS_ELEMENT(previous_enabled_element->gst_element)) {
         LOG_ERROR("Could not find previous element");
@@ -268,14 +259,25 @@ int PipelineManager::enableElement(PipelineElement& element) {
         return EXIT_FAILURE;
     }
 
-    gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element);
-
     gst_element_unlink(previous_enabled_element->gst_element, next_enabled_element->gst_element);
     gst_element_link_many(previous_enabled_element->gst_element, element.gst_element,
                           next_enabled_element->gst_element, NULL);
 
     gst_element_sync_state_with_parent(element.gst_element);
-    element.is_enabled = true;
+
+    return EXIT_SUCCESS;
+}
+
+int PipelineManager::enableElement(PipelineElement& element) {
+    std::lock_guard lock_guard(mutex_);
+
+    if (createGstElement(element) == EXIT_FAILURE) {
+        return EXIT_FAILURE;
+    }
+
+    if (linkGstElement(element) == EXIT_FAILURE) {
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }
@@ -283,21 +285,21 @@ int PipelineManager::enableElement(PipelineElement& element) {
 int PipelineManager::disableElement(PipelineElement& element) {
     std::lock_guard lock_guard(mutex_);
 
-    LOG_INFO("Disable element: {}", element.name);
+    LOG_INFO("Disable element: {}", element.toString());
 
     gst_element_set_state(element.gst_element, GST_STATE_NULL);
 
     const auto src_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element, "src"),
                                            gst_object_unref);
     if (!GST_IS_PAD(src_pad.get())) {
-        LOG_ERROR("Failed to get src pad for element {}", element.name);
+        LOG_ERROR("Failed to get src pad for element {}", element.toString());
         return EXIT_FAILURE;
     }
 
     const auto sink_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element, "video_sink"),
                                             gst_object_unref);
     if (!GST_IS_PAD(sink_pad.get())) {
-        LOG_ERROR("Failed to get sink pad for element {}", element.name);
+        LOG_ERROR("Failed to get sink pad for element {}", element.toString());
         return EXIT_FAILURE;
     }
 
@@ -327,7 +329,7 @@ int PipelineManager::disableElement(PipelineElement& element) {
     gst_element_unlink(element.gst_element, next_enabled_element->gst_element);
 
     if (!gst_bin_remove(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
-        LOG_ERROR("Failed to remove element {} from pipeline", element.name);
+        LOG_ERROR("Failed to remove element {} from pipeline", element.toString());
         return EXIT_FAILURE;
     }
 
@@ -346,7 +348,7 @@ int PipelineManager::enableAllOptionalPipelineElements() {
         if (element.is_optional && !element.is_enabled) {
             enableElement(element);
         } else if (element.is_optional) {
-            LOG_WARN("Element {} is already enabled", element.name);
+            LOG_WARN("Element {} is already enabled", element.toString());
         }
     }
     return EXIT_SUCCESS;
@@ -357,7 +359,7 @@ int PipelineManager::disableAllOptionalPipelineElements() {
         if (element.is_optional && element.is_enabled) {
             disableElement(element);
         } else if (element.is_optional) {
-            LOG_WARN("Element {} is already disabled", element.name);
+            LOG_WARN("Element {} is already disabled", element.toString());
         }
     }
     return EXIT_SUCCESS;
@@ -367,7 +369,7 @@ int PipelineManager::enableOptionalPipelineElement(const std::string& element_na
     for (auto& element: pipeline_elements_) {
         if (element.name == element_name) {
             if (element.is_enabled) {
-                LOG_WARN("Element {} is already enabled", element.name);
+                LOG_WARN("Element {} is already enabled", element.toString());
                 return EXIT_FAILURE;
             }
             return enableElement(element);
@@ -380,7 +382,7 @@ int PipelineManager::disableOptionalPipelineElement(const std::string& element_n
     for (auto& element: pipeline_elements_) {
         if (element.name == element_name) {
             if (!element.is_enabled) {
-                LOG_WARN("Element {} is already disabled", element.name);
+                LOG_WARN("Element {} is already disabled", element.toString());
                 return EXIT_FAILURE;
             }
             return disableElement(element);
@@ -412,5 +414,5 @@ PipelineElement& PipelineManager::findTeeElementForBranch(const std::string& bra
         }
     }
 
-    LOG_CRITICAL("Proper tee element for {} not found", branch_name);
+    throw std::runtime_error("Tee element not found");
 }

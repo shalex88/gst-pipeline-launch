@@ -21,7 +21,8 @@ public:
     bool is_optional {false};
     bool is_enabled {false};
     GstElement* gst_element {nullptr};
-    std::string print() const;
+
+    std::string toString() const;
 };
 
 

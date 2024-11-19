@@ -50,6 +50,26 @@ private:
     std::shared_ptr<PipelineManager> component_;
 };
 
+class EnableAllOptionalBranchesCommand : public CommandInterface {
+public:
+    explicit EnableAllOptionalBranchesCommand(std::shared_ptr<PipelineManager> sensor) : component_(std::move(sensor)) {}
+    void execute(std::shared_ptr<InputInterface::Requester> requester) override;
+    ~EnableAllOptionalBranchesCommand() override = default;
+
+private:
+    std::shared_ptr<PipelineManager> component_;
+};
+
+class DisableAllOptionalBranchesCommand : public CommandInterface {
+public:
+    explicit DisableAllOptionalBranchesCommand(std::shared_ptr<PipelineManager> sensor) : component_(std::move(sensor)) {}
+    void execute(std::shared_ptr<InputInterface::Requester> requester) override;
+    ~DisableAllOptionalBranchesCommand() override = default;
+
+private:
+    std::shared_ptr<PipelineManager> component_;
+};
+
 class StopPipelineCommand : public CommandInterface {
 public:
     explicit StopPipelineCommand(std::shared_ptr<PipelineManager> sensor) : component_(std::move(sensor)) {}
