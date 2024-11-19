@@ -41,7 +41,9 @@ int main(const int argc, const char* argv[]) {
     LOG_TRACE("{} {}.{}.{}", APP_NAME, APP_VERSION_MAJOR, APP_VERSION_MINOR, APP_VERSION_PATCH);
 
     try {
-        App::run(config);
+        if (App::run(config) != EXIT_SUCCESS) {
+            return EXIT_FAILURE;
+        }
     } catch (const std::exception& e) {
         LOG_CRITICAL("{}", e.what());
         return EXIT_FAILURE;

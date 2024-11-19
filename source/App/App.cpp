@@ -28,7 +28,7 @@ std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_p
     return pipeline_file;
 }
 
-void App::run(const AppConfig& config) {
+int App::run(const AppConfig& config) {
     // SignalHandler::setupSignalHandling(); //FIXME:
 
     if (config.verbose) {
@@ -75,7 +75,9 @@ void App::run(const AppConfig& config) {
 
     if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call
         LOG_ERROR("Failed to play pipeline");
+        return EXIT_FAILURE;
     }
 
     LOG_TRACE("Main thread stopped");
+    return EXIT_SUCCESS;
 }
