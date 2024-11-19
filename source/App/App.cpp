@@ -45,6 +45,8 @@ int App::run(const AppConfig& config) {
 
 
     // TODO: Fix cretain commands for multiple elements with the same name
+    dispatcher->registerCommand("test",
+                                std::make_shared<CommandFake>());
     dispatcher->registerCommand("enable_elements",
                                 std::make_shared<EnableAllOptionalElementsCommand>(pipeline_manager));
     dispatcher->registerCommand("disable_elements",
