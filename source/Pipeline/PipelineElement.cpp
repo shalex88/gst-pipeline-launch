@@ -9,12 +9,16 @@ PipelineElement::PipelineElement(const unsigned int id, std::string name, std::s
       properties(std::move(properties)), is_optional(optional), is_enabled(enabled), gst_element(gst_element) {
 }
 
-void PipelineElement::print() const {
+std::string PipelineElement::print() const {
     std::ostringstream oss;
-    oss << *this << " (" << branch;
+    oss << name;
+    for (const auto& [key, value] : properties) {
+        oss << " " << key << "=" << value;
+    }
+    oss << " (" << branch;
     if (name == "tee") {
         oss << ", " << type << " start";
     }
     oss << ")";
-    LOG_INFO("Enable element: {}", oss.str());
+    return oss.str();
 }

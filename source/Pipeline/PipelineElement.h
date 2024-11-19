@@ -21,19 +21,8 @@ public:
     bool is_optional {false};
     bool is_enabled {false};
     GstElement* gst_element {nullptr};
-
-    void print() const;
-    friend std::ostream& operator<<(std::ostream& os, const PipelineElement& element);
+    std::string print() const;
 };
 
-inline std::ostream& operator<<(std::ostream& os, const PipelineElement& element) {
-    os << element.name;
-
-    for (const auto& [key, value] : element.properties) {
-        os << " " << key << "=" << value;
-    }
-
-    return os;
-}
 
 #endif //PIPELINEELEMENT_H

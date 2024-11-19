@@ -13,7 +13,7 @@ public:
     std::vector<PipelineElement> getAllElements() const;
 private:
     std::unique_ptr<File> file_;
-    static PipelineElement deserializeElement(const YAML::detail::iterator_value& element, std::string branch);
+    static PipelineElement deserializeElement(const YAML::detail::iterator_value& element, std::string branch, const bool branch_is_optional);
 };
 
 #endif //PIPELINEPARSER_H

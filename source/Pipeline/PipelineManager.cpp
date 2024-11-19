@@ -126,7 +126,7 @@ int PipelineManager::linkAllGstElements() {
 }
 
 int PipelineManager::createGstElement(PipelineElement& element) const {
-    element.print();
+    LOG_INFO("Enable element: {}", element.print());
     // TODO: handle the case when there are multiple elements with the same name in the same branch
     auto unique_gst_element_name = element.name + std::to_string(element.id);
 
@@ -244,7 +244,7 @@ PipelineElement* PipelineManager::getNextEnabledElement(const PipelineElement& e
 int PipelineManager::enableElement(PipelineElement& element) {
     std::lock_guard lock_guard(mutex_);
 
-    LOG_INFO("Enable element: {}", element.name);
+    LOG_INFO("Enable element: {}", element.print());
 
     element.gst_element = gst_element_factory_make(element.name.c_str(), element.name.c_str());
     if (!element.gst_element) {
