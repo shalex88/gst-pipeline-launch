@@ -31,7 +31,9 @@ std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_p
 void App::run(const AppConfig& config) {
     // SignalHandler::setupSignalHandling(); //FIXME:
 
-    // gst_debug_set_default_threshold(GST_LEVEL_INFO);
+    if (config.verbose) {
+        gst_debug_set_default_threshold(GST_LEVEL_INFO);
+    }
 
     auto scheduler = std::make_shared<Scheduler>();
     scheduler->init();

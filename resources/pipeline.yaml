@@ -10,9 +10,48 @@ pipeline:
             caps: video/x-raw,width=640,height=480,framerate=30/1
         - name: tee
           type: atr_tee
+        - name: tee
+          type: vmd_tee
+        - name: queue
+        - name: textoverlay
+          properties:
+            text: RAW
+            valignment: top
+            halignment: left
         - name: timeoverlay
+          optional: true
+        - name: autovideosink
+
+    - name: vmd_tee
+      elements:
+        - name: queue
+        - name: queue
+        - name: textoverlay
+          properties:
+            text: VMD
+            valignment: top
+            halignment: left
         - name: autovideosink
 
     - name: atr_tee
       elements:
+        - name: queue
+        - name: tee
+          type: atr_vmd_tee
+        - name: queue
+        - name: textoverlay
+          properties:
+            text: ATR
+            valignment: top
+            halignment: left
+        - name: autovideosink
+
+    - name: atr_vmd_tee
+      elements:
+        - name: queue
+        - name: textoverlay
+          properties:
+            text: ATR + VMD
+            valignment: top
+            halignment: left
         - name: autovideosink

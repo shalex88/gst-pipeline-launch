@@ -11,7 +11,7 @@ class PipelineManager {
 public:
     explicit PipelineManager(std::string pipeline_file);
     ~PipelineManager();
-    static int linkTeeToElement(PipelineElement* tee, PipelineElement* sink);
+    static int linkTeeToElement(const PipelineElement* tee, const PipelineElement* sink);
     int play();
     int stop() const;
     int enableAllOptionalPipelineElements();
@@ -21,12 +21,11 @@ public:
     std::vector<std::string> getOptionalPipelineElementsNames() const;
 
 private:
-    PipelineElement& findTeeElement(const std::string& string);
+    PipelineElement& findTeeElementForBranch(const std::string& string);
     int linkAllGstElements();
     int createGstElement(PipelineElement& element) const;
     int createGstPipeline(std::vector<PipelineElement>& pipeline);
     void createElementsList(const std::string& file_path);
-    static void printElementName(const PipelineElement& element);
     PipelineElement* getPreviousEnabledElement(const PipelineElement& element);
     PipelineElement* getNextEnabledElement(const PipelineElement& element);
     int enableElement(PipelineElement& element);
