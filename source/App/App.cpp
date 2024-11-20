@@ -69,8 +69,7 @@ int App::run(const AppConfig& config) {
                                         pipeline_manager, optional_element_name));
     }
 
-    constexpr int tcp_server_port = 12345;
-    auto network_manager = std::make_shared<TcpNetworkManager>(tcp_server_port);
+    auto network_manager = std::make_shared<TcpNetworkManager>(config.port);
 
     const auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
     tcp_server->init();

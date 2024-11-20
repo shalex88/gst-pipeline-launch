@@ -6,6 +6,7 @@
 
 struct AppConfig {
     std::filesystem::path input_file;
+    unsigned int port;
     bool verbose;
 };
 

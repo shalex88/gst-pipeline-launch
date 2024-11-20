@@ -7,6 +7,7 @@ AppConfig parse_command_line_arguments(const int argc, const char* argv[]) {
     cxxopts::Options options(argv[0], "Gstreamer runner");
     options.add_options()
         ("i,input", "Input YAML pipeline file", cxxopts::value<std::filesystem::path>()->default_value("../resources/pipeline.yaml"))
+        ("p,port", "Port for TCP socket", cxxopts::value<unsigned int>()->default_value("12345"))
         ("v,verbose", "Enable verbose logging", cxxopts::value<bool>()->default_value("false"))
         ("h,help", "Print usage");
 
@@ -19,6 +20,7 @@ AppConfig parse_command_line_arguments(const int argc, const char* argv[]) {
 
     AppConfig config {
         .input_file = result["input"].as<std::filesystem::path>(),
+        .port = result["port"].as<unsigned int>(),
         .verbose = result["verbose"].as<bool>()
     };
 
