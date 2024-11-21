@@ -31,10 +31,8 @@ std::vector<PipelineElement> PipelineParser::getAllElements() const {
     for (const auto& branch : yaml_data["pipeline"]["branches"]) {
         const auto branch_name = branch["name"].as<std::string>();
         const auto branch_is_optional = branch["optional"].IsDefined() ? branch["optional"].as<bool>() : false;
-        if (!branch_is_optional) {
-            for (const auto& element : branch["elements"]) {
-                all_elements.emplace_back(deserializeElement(element, branch_name, branch_is_optional));
-            }
+        for (const auto& element : branch["elements"]) {
+            all_elements.emplace_back(deserializeElement(element, branch_name, branch_is_optional));
         }
     }
 

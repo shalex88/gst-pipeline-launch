@@ -23,16 +23,15 @@ public:
 
 private:
     PipelineElement& findTeeElementForBranch(const std::string& branch_name);
-    int linkAllGstElements();
     int createGstElement(PipelineElement& element) const;
+    int linkGstElement(PipelineElement& current_element);
     int createGstPipeline(std::vector<PipelineElement>& pipeline);
     void createElementsList(const std::string& file_path);
     PipelineElement* getPreviousEnabledElement(const PipelineElement& element);
     PipelineElement* getNextEnabledElement(const PipelineElement& element);
-    int linkGstElement(const PipelineElement& element);
-    static int linkTeeToElement(const PipelineElement* tee, const PipelineElement* sink);
-    int enableElement(PipelineElement& element);
-    int disableElement(PipelineElement& element);
+    static int linkElements(PipelineElement& source, PipelineElement& destination);
+    int enableOptionalElement(PipelineElement& element);
+    int disableOptionalElement(PipelineElement& element);
     static gint busCallback(GstBus* bus, GstMessage* message, gpointer data);
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;

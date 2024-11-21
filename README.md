@@ -14,5 +14,6 @@ sudo apt -y install pkg-config bison flex nasm
 
 ## TODO
 
+- Add monitoring for pipeline freezes
 - Enable/disable pipeline branches
 - Handle (memory:NVMM) caps feature

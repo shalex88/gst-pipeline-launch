@@ -3,7 +3,6 @@
 
 #include <map>
 #include <limits>
-#include <ostream>
 #include <string>
 #include <gst/gstelement.h>
 
@@ -19,7 +18,7 @@ public:
     std::string branch {};
     std::map<std::string, std::string> properties;
     bool is_optional {false};
-    bool is_enabled {false};
+    std::pair<bool,bool> is_enabled {false, false};
     GstElement* gst_element {nullptr};
 
     std::string toString() const;

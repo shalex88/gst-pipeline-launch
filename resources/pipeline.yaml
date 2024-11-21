@@ -15,6 +15,7 @@ pipeline:
           optional: true
         - name: tee
           type: atr_tee
+        - name: queue
         - name: tee
           type: vmd_tee
         - name: queue
@@ -27,7 +28,6 @@ pipeline:
 
     - name: vmd_tee
       elements:
-        - name: queue
         - name: queue
         - name: textoverlay
           properties:
@@ -50,7 +50,7 @@ pipeline:
         - name: autovideosink
 
     - name: atr_vmd_tee
-      optional: true
+#      optional: true
       elements:
         - name: queue
         - name: textoverlay
