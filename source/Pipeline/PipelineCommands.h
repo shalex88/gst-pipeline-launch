@@ -8,7 +8,7 @@
 
 class EnableOptionalElementCommand : public CommandInterface {
 public:
-    explicit EnableOptionalElementCommand(std::shared_ptr<PipelineManager> sensor, const std::string element_name)
+    explicit EnableOptionalElementCommand(std::shared_ptr<PipelineManager> sensor, const std::string& element_name)
         : component_(std::move(sensor)), element_name_(std::move(element_name)) {}
     void execute(std::shared_ptr<InputInterface::Requester> requester) override;
     ~EnableOptionalElementCommand() override = default;
@@ -20,7 +20,7 @@ private:
 
 class DisableOptionalElementCommand : public CommandInterface {
 public:
-    explicit DisableOptionalElementCommand(std::shared_ptr<PipelineManager> sensor, const std::string element_name)
+    explicit DisableOptionalElementCommand(std::shared_ptr<PipelineManager> sensor, const std::string& element_name)
         : component_(std::move(sensor)), element_name_(std::move(element_name)) {}
     void execute(std::shared_ptr<InputInterface::Requester> requester) override;
     ~DisableOptionalElementCommand() override = default;
@@ -28,6 +28,30 @@ public:
 private:
     std::shared_ptr<PipelineManager> component_;
     std::string element_name_;
+};
+
+class EnableOptionalBranchCommand : public CommandInterface {
+public:
+    explicit EnableOptionalBranchCommand(std::shared_ptr<PipelineManager> sensor, const std::string& branch_name)
+        : component_(std::move(sensor)), branch_name_(std::move(branch_name)) {}
+    void execute(std::shared_ptr<InputInterface::Requester> requester) override;
+    ~EnableOptionalBranchCommand() override = default;
+
+private:
+    std::shared_ptr<PipelineManager> component_;
+    std::string branch_name_;
+};
+
+class DisableOptionalBranchCommand : public CommandInterface {
+public:
+    explicit DisableOptionalBranchCommand(std::shared_ptr<PipelineManager> sensor, const std::string& branch_name)
+        : component_(std::move(sensor)), branch_name_(std::move(branch_name)) {}
+    void execute(std::shared_ptr<InputInterface::Requester> requester) override;
+    ~DisableOptionalBranchCommand() override = default;
+
+private:
+    std::shared_ptr<PipelineManager> component_;
+    std::string branch_name_;
 };
 
 class EnableAllOptionalElementsCommand : public CommandInterface {

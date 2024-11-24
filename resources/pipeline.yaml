@@ -27,6 +27,7 @@ pipeline:
         - name: autovideosink
 
     - name: vmd_tee
+      optional: true
       elements:
         - name: queue
         - name: textoverlay
@@ -35,8 +36,10 @@ pipeline:
             valignment: top
             halignment: left
         - name: autovideosink
+          type: sink
 
     - name: atr_tee
+      optional: true
       elements:
         - name: queue
         - name: tee
@@ -50,7 +53,7 @@ pipeline:
         - name: autovideosink
 
     - name: atr_vmd_tee
-#      optional: true
+      optional: true
       elements:
         - name: queue
         - name: textoverlay

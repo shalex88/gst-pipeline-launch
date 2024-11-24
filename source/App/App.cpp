@@ -32,7 +32,7 @@ int App::run(const AppConfig& config) {
     // SignalHandler::setupSignalHandling(); //FIXME:
 
     if (config.verbose) {
-        gst_debug_set_default_threshold(GST_LEVEL_INFO);
+        // gst_debug_set_default_threshold(GST_LEVEL_INFO);
     }
 
     auto scheduler = std::make_shared<Scheduler>();
@@ -67,6 +67,17 @@ int App::run(const AppConfig& config) {
         dispatcher->registerCommand(disable_command_name,
                                     std::make_shared<DisableOptionalElementCommand>(
                                         pipeline_manager, optional_element_name));
+    }
+
+    for (const auto& optional_branch_name: pipeline_manager->getOptionalPipelineBranchesNames()) {
+        std::string enable_command_name = "enable_" + optional_branch_name;
+        std::string disable_command_name = "disable_" + optional_branch_name;
+        dispatcher->registerCommand(enable_command_name,
+                                    std::make_shared<EnableOptionalBranchCommand>(
+                                        pipeline_manager, optional_branch_name));
+        dispatcher->registerCommand(disable_command_name,
+                                    std::make_shared<DisableOptionalBranchCommand>(
+                                        pipeline_manager, optional_branch_name));
     }
 
     auto network_manager = std::make_shared<TcpNetworkManager>(config.port);
