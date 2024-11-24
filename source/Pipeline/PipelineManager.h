@@ -29,10 +29,11 @@ private:
     void createElementsList(const std::string& file_path);
     PipelineElement* getPreviousEnabledElement(const PipelineElement& element);
     PipelineElement* getNextEnabledElement(const PipelineElement& element);
-    static int linkElements(PipelineElement& source, PipelineElement& destination);
+    static int linkElements(const PipelineElement& source, const PipelineElement& destination);
     int enableOptionalElement(PipelineElement& element);
-    int disableOptionalElement(PipelineElement& element);
+    int disableOptionalElement(PipelineElement& element) const;
     static gint busCallback(GstBus* bus, GstMessage* message, gpointer data);
+    static GstPadProbeReturn disconnectGstElementProbeCallback(GstPad* src_peer, GstPadProbeInfo* info, gpointer data);
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;

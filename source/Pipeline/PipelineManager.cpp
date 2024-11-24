@@ -18,7 +18,7 @@ PipelineManager::PipelineManager(std::string pipeline_file) : pipeline_file_(std
     createElementsList(pipeline_file_);
 }
 
-int PipelineManager::linkElements(PipelineElement& source, PipelineElement& destination) {
+int PipelineManager::linkElements(const PipelineElement& source, const PipelineElement& destination) {
     GstPad* tee_src_pad = nullptr;
     if (source.name == "tee") {
         tee_src_pad = gst_element_request_pad_simple(source.gst_element, "src_%u");
@@ -85,10 +85,13 @@ int PipelineManager::linkGstElement(PipelineElement& current_element) {
     } else if (prev_element && next_element && prev_element->branch == next_element->branch) {
         LOG_TRACE("Link between elements");
         gst_element_unlink(prev_element->gst_element, next_element->gst_element);
-        if (gst_element_link_many(prev_element->gst_element, current_element.gst_element, next_element->gst_element, NULL)) {
-            LOG_DEBUG("Linked {} to {} to {}", prev_element->toString(), current_element.toString(), next_element->toString());
+        if (gst_element_link_many(prev_element->gst_element, current_element.gst_element, next_element->gst_element,
+                                  NULL)) {
+            LOG_DEBUG("Linked {} to {} to {}", prev_element->toString(), current_element.toString(),
+                      next_element->toString());
         } else {
-            LOG_ERROR("Failed to link {} to {} to {}", prev_element->toString(), current_element.toString(), next_element->toString());
+            LOG_ERROR("Failed to link {} to {} to {}", prev_element->toString(), current_element.toString(),
+                      next_element->toString());
             return EXIT_FAILURE;
         }
         if (!gst_element_sync_state_with_parent(current_element.gst_element)) {
@@ -96,7 +99,7 @@ int PipelineManager::linkGstElement(PipelineElement& current_element) {
         }
     }
 
-    if (prev_element && prev_element->branch != current_element.branch){
+    if (prev_element && prev_element->branch != current_element.branch) {
         LOG_TRACE("Link first in branch");
         auto tee = findTeeElementForBranch(current_element.branch);
         if (linkElements(tee, current_element) == EXIT_SUCCESS) {
@@ -245,63 +248,48 @@ int PipelineManager::enableOptionalElement(PipelineElement& element) {
     return EXIT_SUCCESS;
 }
 
-int PipelineManager::disableOptionalElement(PipelineElement& element) {
+GstPadProbeReturn PipelineManager::disconnectGstElementProbeCallback(GstPad* src_peer, GstPadProbeInfo* info, gpointer data) {
+    const auto pipeline_manager = static_cast<PipelineManager*>(data);
+
+    const auto sink_pad = std::shared_ptr<GstPad>(gst_pad_get_peer(src_peer), gst_object_unref);
+    g_assert(sink_pad);
+
+    const auto gst_element = std::shared_ptr<GstElement>(gst_pad_get_parent_element(sink_pad.get()), gst_object_unref);
+    g_assert(gst_element);
+
+    const auto src_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(gst_element.get(), "src"), gst_object_unref);
+    const auto sink_peer = std::shared_ptr<GstPad>(gst_pad_get_peer(src_pad.get()), gst_object_unref);
+    g_assert(sink_peer);
+
+    gst_pad_unlink(src_peer, sink_pad.get());
+    gst_pad_unlink(src_pad.get(), sink_peer.get());
+
+    gst_pad_link(src_peer, sink_peer.get());
+
+    gst_element_set_state(gst_element.get(), GST_STATE_NULL);
+    gst_bin_remove(GST_BIN(pipeline_manager->gst_pipeline_.get()), gst_element.get());
+
+    return GST_PAD_PROBE_REMOVE;
+}
+
+int PipelineManager::disableOptionalElement(PipelineElement& element) const {
     std::lock_guard lock_guard(mutex_);
 
-    gst_element_set_state(element.gst_element, GST_STATE_NULL);
-
-    const auto src_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element, "src"),
-                                           gst_object_unref);
-    if (!GST_IS_PAD(src_pad.get())) {
-        LOG_ERROR("Failed to get src pad for element {}", element.toString());
-        return EXIT_FAILURE;
-    }
-
     const auto sink_pad = std::shared_ptr<GstPad>(gst_element_get_static_pad(element.gst_element, "video_sink"),
-                                            gst_object_unref);
+                                                  gst_object_unref);
     if (!GST_IS_PAD(sink_pad.get())) {
         LOG_ERROR("Failed to get sink pad for element {}", element.toString());
         return EXIT_FAILURE;
     }
 
-    gst_pad_add_probe(sink_pad.get(), GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM,
-                      [](GstPad*, GstPadProbeInfo*, gpointer) -> GstPadProbeReturn {
-                          return GST_PAD_PROBE_OK;
-                      }, nullptr, nullptr);
-
-    gst_pad_add_probe(src_pad.get(), GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM,
-                      [](GstPad*, GstPadProbeInfo*, gpointer) -> GstPadProbeReturn {
-                          return GST_PAD_PROBE_OK;
-                      }, nullptr, nullptr);
-
-    const auto previous_enabled_element = getPreviousEnabledElement(element);
-    if (!previous_enabled_element || !GST_IS_ELEMENT(previous_enabled_element->gst_element)) {
-        LOG_ERROR("Could not find previous element");
+    const auto src_peer = gst_pad_get_peer(sink_pad.get());
+    if (!src_peer) {
+        LOG_ERROR("Failed to get src peer for element {}", element.toString());
         return EXIT_FAILURE;
     }
 
-    const auto next_enabled_element = getNextEnabledElement(element);
-    if (!next_enabled_element || !GST_IS_ELEMENT(next_enabled_element->gst_element)) {
-        LOG_ERROR("Could not find next element");
-        return EXIT_FAILURE;
-    }
-
-    gst_element_unlink(previous_enabled_element->gst_element, element.gst_element);
-    gst_element_unlink(element.gst_element, next_enabled_element->gst_element);
-    LOG_DEBUG("Unlinked {} from {}", previous_enabled_element->toString(), element.toString());
-    LOG_DEBUG("Unlinked {} from {}", element.toString(), next_enabled_element->toString());
-
-    if (!gst_bin_remove(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
-        LOG_ERROR("Failed to remove element {} from pipeline", element.toString());
-        return EXIT_FAILURE;
-    }
-    LOG_DEBUG("Removed element {}", element.toString());
-
-    if (!gst_element_link(previous_enabled_element->gst_element, next_enabled_element->gst_element)) {
-        LOG_ERROR("Failed to link previous element to next element");
-        return EXIT_FAILURE;
-    }
-    LOG_DEBUG("Linked {} to {}", previous_enabled_element->toString(), next_enabled_element->toString());
+    gst_pad_add_probe(src_peer, GST_PAD_PROBE_TYPE_IDLE, disconnectGstElementProbeCallback,
+                      const_cast<PipelineManager*>(this), nullptr);
 
     element.is_enabled.first = false;
     element.is_enabled.second = false;
