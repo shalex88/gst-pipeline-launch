@@ -11,3 +11,15 @@ sudo apt -y install pkg-config libgstreamer1.0-dev
 # Install gstreamer via vcpkg (not working, gst_element_factory_make() returns NULL)
 sudo apt -y install pkg-config bison flex nasm 
 ```
+
+## TODO
+
+- Add monitoring for pipeline freezes
+- Handle (memory:NVMM) caps feature
+
+## Known issues
+
+- Enabling branch that forks from disabled branch is unsupported
+- Disabling branch that was forks and the fork is still enabled is unsupported
+- Registering multiple branches/elements with the same name is unsupported
+- gst_object_unref errors when disabling branches

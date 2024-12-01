@@ -28,8 +28,12 @@ std::filesystem::path get_pipeline_file_path(const std::filesystem::path& file_p
     return pipeline_file;
 }
 
-void App::run(const AppConfig& config) {
+int App::run(const AppConfig& config) {
     // SignalHandler::setupSignalHandling(); //FIXME:
+
+    if (config.verbose) {
+        // gst_debug_set_default_threshold(GST_LEVEL_INFO);
+    }
 
     auto scheduler = std::make_shared<Scheduler>();
     scheduler->init();
@@ -39,10 +43,18 @@ void App::run(const AppConfig& config) {
 
     auto dispatcher = std::make_shared<CommandDispatcher>(scheduler);
 
-    dispatcher->registerCommand("enable_all",
+
+    // TODO: Fix cretain commands for multiple elements with the same name
+    dispatcher->registerCommand("test",
+                                std::make_shared<CommandFake>());
+    dispatcher->registerCommand("enable_elements",
                                 std::make_shared<EnableAllOptionalElementsCommand>(pipeline_manager));
-    dispatcher->registerCommand("disable_all",
+    dispatcher->registerCommand("disable_elements",
                                 std::make_shared<DisableAllOptionalElementsCommand>(pipeline_manager));
+    dispatcher->registerCommand("enable_branches",
+                                std::make_shared<EnableAllOptionalBranchesCommand>(pipeline_manager));
+    dispatcher->registerCommand("disable_branches",
+                                std::make_shared<DisableAllOptionalBranchesCommand>(pipeline_manager));
     dispatcher->registerCommand("stop",
                                 std::make_shared<StopPipelineCommand>(pipeline_manager));
 
@@ -57,15 +69,27 @@ void App::run(const AppConfig& config) {
                                         pipeline_manager, optional_element_name));
     }
 
-    constexpr int tcp_server_port = 12345;
-    auto network_manager = std::make_shared<TcpNetworkManager>(tcp_server_port);
+    for (const auto& optional_branch_name: pipeline_manager->getOptionalPipelineBranchesNames()) {
+        std::string enable_command_name = "enable_" + optional_branch_name;
+        std::string disable_command_name = "disable_" + optional_branch_name;
+        dispatcher->registerCommand(enable_command_name,
+                                    std::make_shared<EnableOptionalBranchCommand>(
+                                        pipeline_manager, optional_branch_name));
+        dispatcher->registerCommand(disable_command_name,
+                                    std::make_shared<DisableOptionalBranchCommand>(
+                                        pipeline_manager, optional_branch_name));
+    }
+
+    auto network_manager = std::make_shared<TcpNetworkManager>(config.port);
 
     const auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
     tcp_server->init();
 
     if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call
         LOG_ERROR("Failed to play pipeline");
+        return EXIT_FAILURE;
     }
 
     LOG_TRACE("Main thread stopped");
+    return EXIT_SUCCESS;
 }

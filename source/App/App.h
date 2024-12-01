@@ -6,6 +6,7 @@
 
 struct AppConfig {
     std::filesystem::path input_file;
+    unsigned int port;
     bool verbose;
 };
 
@@ -13,7 +14,7 @@ class App {
 public:
     App() = default;
     ~App() = default;
-    static void run(const AppConfig& config);
+    static int run(const AppConfig& config);
     static void shutdown();
 
 private:

@@ -19,10 +19,11 @@ void CommandDispatcher::dispatchCommand(std::shared_ptr<InputInterface::Requeste
     {
         std::lock_guard lock(map_mutex_);
         if (const auto it = command_map_.find(command_name); it != command_map_.end()) {
+            LOG_INFO("Command '{}' received", command_name);
             scheduler_->enqueueTask(std::move(requester), it->second);
         } else {
             requester->source->sendResponse(requester, "Nack");
-            LOG_ERROR("Unknown command");
+            LOG_ERROR("Unknown command received");
         }
     }
 }
@@ -31,6 +32,7 @@ void CommandDispatcher::dispatchCommand(const std::string& command_name) {
     {
         std::lock_guard lock(map_mutex_);
         if (const auto it = command_map_.find(command_name); it != command_map_.end()) {
+            LOG_INFO("Command '{}' received", command_name);
             scheduler_->enqueueTask(it->second);
         } else {
             LOG_ERROR("Unknown command");
