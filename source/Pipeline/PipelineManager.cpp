@@ -26,17 +26,21 @@ int PipelineManager::linkElements(const PipelineElement& source, const PipelineE
         src_pad = gst_element_get_static_pad(source.gst_element, "src");
         if (!(src_pad && GST_PAD_IS_SRC(src_pad))) {
             LOG_ERROR("Failed to get the src pad of the {}", source.name);
+            gst_object_unref(src_pad);
             return EXIT_FAILURE;
         }
     }
 
-    auto sink_pad = gst_element_get_static_pad(destination.gst_element, "sink");
+    auto sink_pad = gst_element_request_pad_simple(destination.gst_element, "sink_%u");
     if (!sink_pad) {
         sink_pad = gst_element_get_static_pad(destination.gst_element, "video_sink");
-        if (!(sink_pad && GST_PAD_IS_SINK(sink_pad))) {
-            LOG_ERROR("Failed to get the sink pad of the {}", destination.name);
-            gst_object_unref(src_pad);
-            return EXIT_FAILURE;
+        if (!sink_pad) {
+            sink_pad = gst_element_get_static_pad(destination.gst_element, "sink");
+            if (!(sink_pad && GST_PAD_IS_SINK(sink_pad))) {
+                LOG_ERROR("Failed to get the sink pad of the {}", destination.name);
+                gst_object_unref(src_pad);
+                return EXIT_FAILURE;
+            }
         }
     }
 
