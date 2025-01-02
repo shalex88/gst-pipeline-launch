@@ -42,7 +42,7 @@ private:
                 return "warning";
             case LogLevel::Error:
                 return "error";
-            case LogLevel::kCritical:
+            case LogLevel::Critical:
                 return "critical";
             default:
                 throw std::invalid_argument("Invalid log severity");

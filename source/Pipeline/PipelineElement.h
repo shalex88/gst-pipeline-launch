@@ -19,6 +19,7 @@ public:
     std::map<std::string, std::string> properties;
     bool is_optional {false};
     std::pair<bool,bool> is_enabled {false, false};
+    unsigned int dynamic_pad_unique_index {0};
     GstElement* gst_element {nullptr};
 
     std::string toString() const;
