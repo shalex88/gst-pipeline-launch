@@ -461,49 +461,48 @@ PipelineElement& PipelineManager::findTeeElementForBranch(const std::string& bra
     throw std::runtime_error("Tee element not found");
 }
 
-std::string PipelineManager::getRequestedDynamicPadName(PipelineElement& element, GstPadDirection direction) {
-    std::string baseName {};
+GstPad* PipelineManager::allocateDynamicPad(PipelineElement& element, GstPadDirection direction) {
+    std::string base_pad_name {};
     switch (direction) {
         case GST_PAD_SRC:
-            baseName="src";
+            base_pad_name="src";
             break;
         case GST_PAD_SINK:
-            baseName="sink";
+            base_pad_name="sink";
             break;
         default:
-            throw std::invalid_argument("Invalid PadDirection specified");
+            throw std::invalid_argument("Invalid GstPadDirection");
     }
-    auto padName = baseName + "_" + std::to_string(element.dynamic_pad_unique_index++);
-    LOG_TRACE("{}, {}", element.name, padName);
 
-    return padName;
+    auto pad_name = base_pad_name + "_" + std::to_string(element.dynamic_pad_unique_index++);
+    LOG_TRACE("Requesting dynamic pad \"{}\" for {}", pad_name, element.name);
+
+    return gst_element_request_pad_simple(element.gst_element, pad_name.c_str());
 }
 
 GstPad* PipelineManager::allocatePad(PipelineElement& element, GstPadDirection direction) {
-    auto dynamic_pad_name = getRequestedDynamicPadName(element, direction);  
-    auto pad = gst_element_request_pad_simple(element.gst_element, dynamic_pad_name.c_str());
-    
+    auto pad = allocateDynamicPad(element, direction);  
     if(!pad){
         switch (direction) {
-        case GST_PAD_SRC:
-            pad = gst_element_get_static_pad(element.gst_element, "src");
-            if (!pad) {
-                LOG_ERROR("Failed to get the src pad of the {}", element.name);
-                return nullptr;
-            }
-            break;
-        case GST_PAD_SINK:
-            pad = gst_element_get_static_pad(element.gst_element, "video_sink");
-            if (!pad) {
-                pad = gst_element_get_static_pad(element.gst_element, "sink");
+            case GST_PAD_SRC:
+                pad = gst_element_get_static_pad(element.gst_element, "src");
                 if (!pad) {
-                    LOG_ERROR("Failed to get the sink pad of the {}", element.name);
+                    LOG_ERROR("Failed to get the src pad of the {}", element.name);
                     return nullptr;
                 }
-            }   
-            break;
-        default:
-            throw std::invalid_argument("Invalid pad direction specified");
+                break;
+            case GST_PAD_SINK:
+                pad = gst_element_get_static_pad(element.gst_element, "video_sink");
+                if (!pad) {
+                    pad = gst_element_get_static_pad(element.gst_element, "sink");
+                    if (!pad) {
+                        LOG_ERROR("Failed to get the sink pad of the {}", element.name);
+                        return nullptr;
+                    }
+                }   
+                break;
+            default:
+                throw std::invalid_argument("Invalid GstPadDirection");
         }
     }
 
