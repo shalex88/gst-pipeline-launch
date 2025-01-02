@@ -1,0 +1,20 @@
+pipeline:
+  branches:
+    - name: main
+      elements:
+        - name: filesrc
+          properties:
+            location: /opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.h264
+        - name: h264parse
+        - name: nvv4l2decoder
+        - name: nvstreammux
+          properties:
+            batch-size: 1
+            width: 1920
+            height: 1080
+            batched-push-timeout: 40000
+        - name: nvinfer
+          properties:
+            config-file-path: /home/fronti/Downloads/Primary_Detector/config.yml
+        - name: nvdsosd
+        - name: nv3dsink

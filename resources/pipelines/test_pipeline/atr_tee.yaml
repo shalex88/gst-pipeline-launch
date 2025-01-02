@@ -1,0 +1,33 @@
+pipeline:
+  branches:
+    - name: main
+      elements:
+        - name: filesrc
+          properties:
+            location: /opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.h264
+        - name: h264parse
+        - name: nvv4l2decoder
+        - name: tee
+          type: atr_tee
+        - name: queue
+        - name: nvvideoconvert
+        - name: fpsdisplaysink
+        
+    - name: atr_tee
+      optional: true
+      elements:
+        - name: queue
+        - name: nvstreammux
+          properties:
+            batch-size: 1
+            width: 1920
+            height: 1080
+            batched-push-timeout: 40000
+        - name: nvinfer
+          properties:
+            config-file-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/infer_config.yml
+        - name: nvdsosd
+        - name: nvvideoconvert
+        - name: fpsdisplaysink
+          properties:
+            sync: false

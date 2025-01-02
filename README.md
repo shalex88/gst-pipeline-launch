@@ -14,12 +14,16 @@ sudo apt -y install pkg-config bison flex nasm
 
 ## TODO
 
-- Add monitoring for pipeline freezes
-- Handle (memory:NVMM) caps feature
+- Add monitoring for pipeline freezes, notify user
+- Separate PipelineManager to Pipeline and PipelineManager?
+- Notify user on unsupported commands and fails
+- Fix inconsistent representation of multiple GstElement references in PipelineElement (e.g., tee vs. mux)
 
 ## Known issues
 
 - Enabling branch that forks from disabled branch is unsupported
-- Disabling branch that was forks and the fork is still enabled is unsupported
-- Registering multiple branches/elements with the same name is unsupported
-- gst_object_unref errors when disabling branches
+- Disabling branch that was forked and the fork is still enabled is unsupported
+- Registering multiple branches/elements with the same name is unsupported, maybe we should support it?
+- Tee with more than one branch is unsupported, this behavior differs from gst-launch, maybe we should support it?
+- Running nvmsgconv element (msgconv_config.yml) behaves differently from gst-launch. source: PipelineManager::generateDynamicPadName() FIXME
+- Currently we send ack on enable_branch command even if connection fails. The cause is an async nature of the connection function.

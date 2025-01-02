@@ -85,7 +85,7 @@ int App::run(const AppConfig& config) {
     const auto tcp_server = std::make_shared<MessageServer>(dispatcher, network_manager);
     tcp_server->init();
 
-    if (pipeline_manager->play() != EXIT_SUCCESS) { // Blocking call
+    if (auto ec = pipeline_manager->play()) { // Blocking call
         LOG_ERROR("Failed to play pipeline");
         return EXIT_FAILURE;
     }
