@@ -11,30 +11,30 @@ class PipelineManager {
 public:
     explicit PipelineManager(std::string pipeline_file);
     ~PipelineManager();
-    int play();
-    int stop() const;
-    int enableOptionalPipelineElement(const std::string& element_name);
-    int disableOptionalPipelineElement(const std::string& element_name);
-    int enableOptionalPipelineBranch(const std::string& branch_name);
-    int disableOptionalPipelineBranch(const std::string& branch_name);
-    int enableAllOptionalPipelineElements();
-    int disableAllOptionalPipelineElements();
-    int enableAllOptionalPipelineBranches();
-    int disableAllOptionalPipelineBranches();
+    std::error_code play();
+    std::error_code stop() const;
+    std::error_code enableOptionalPipelineElement(const std::string& element_name);
+    std::error_code disableOptionalPipelineElement(const std::string& element_name);
+    std::error_code enableOptionalPipelineBranch(const std::string& branch_name);
+    std::error_code disableOptionalPipelineBranch(const std::string& branch_name);
+    std::error_code enableAllOptionalPipelineElements();
+    std::error_code disableAllOptionalPipelineElements();
+    std::error_code enableAllOptionalPipelineBranches();
+    std::error_code disableAllOptionalPipelineBranches();
     std::vector<std::string> getOptionalPipelineElementsNames() const;
     std::vector<std::string> getOptionalPipelineBranchesNames() const;
 
 private:
     PipelineElement& findTeeElementForBranch(const std::string& branch_name);
-    int createGstElement(PipelineElement& element) const;
-    int linkGstElement(PipelineElement& current_element);
-    int createGstPipeline(std::vector<PipelineElement>& pipeline);
+    std::error_code createGstElement(PipelineElement& element) const;
+    std::error_code linkGstElement(PipelineElement& current_element);
+    std::error_code createGstPipeline(std::vector<PipelineElement>& pipeline);
     void createElementsList(const std::string& file_path);
     PipelineElement* getPreviousEnabledElement(const PipelineElement& element);
     PipelineElement* getNextEnabledElement(const PipelineElement& element);
-    static int linkElements(PipelineElement& source, PipelineElement& destination);
-    int enableOptionalElement(PipelineElement& element);
-    int disableOptionalElement(PipelineElement& element) const;
+    static std::error_code linkElements(PipelineElement& source, PipelineElement& destination);
+    std::error_code enableOptionalElement(PipelineElement& element);
+    std::error_code disableOptionalElement(PipelineElement& element) const;
     static gint busCallback(GstBus* bus, GstMessage* message, gpointer data);
     static GstPadProbeReturn disconnectGstElementProbeCallback(GstPad* src_peer, GstPadProbeInfo* info, gpointer data);
     static GstPadProbeReturn connectGstElementProbeCallback(GstPad* pad, GstPadProbeInfo* info, gpointer data);
