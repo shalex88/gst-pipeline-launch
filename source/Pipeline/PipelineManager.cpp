@@ -83,7 +83,7 @@ int PipelineManager::linkGstElement(PipelineElement& current_element) {
     auto next_element = getNextEnabledElement(current_element);
     auto prev_element = getPreviousEnabledElement(current_element);
 
-    if (next_element && current_element.branch == next_element->branch && !next_element->is_enabled.second) {
+    if (next_element && current_element.branch == next_element->branch && !next_element->is_linked) {
         LOG_TRACE("Link first or middle element");
         if (linkElements(current_element, *next_element) == EXIT_SUCCESS) {
             LOG_DEBUG("Linked {} to {}", current_element.toString(), next_element->toString());
@@ -122,7 +122,7 @@ int PipelineManager::linkGstElement(PipelineElement& current_element) {
         }
     }
 
-    current_element.is_enabled.second = true;
+    current_element.is_linked = true;
 
     return EXIT_SUCCESS;
 }
@@ -151,7 +151,7 @@ int PipelineManager::createGstElement(PipelineElement& element) const {
 
     gst_element_sync_state_with_parent(element.gst_element);
 
-    element.is_enabled.first = true;
+    element.is_initialized = true;
     LOG_DEBUG("Created element: {}", element.toString());
 
     return EXIT_SUCCESS;
@@ -167,7 +167,7 @@ int PipelineManager::createGstPipeline(std::vector<PipelineElement>& pipeline) {
     }
 
     for (auto& element: pipeline) {
-        if (element.is_enabled.first) {
+        if (element.is_initialized) {
             if (linkGstElement(element) != EXIT_SUCCESS) {
                 return EXIT_FAILURE;
             }
@@ -232,7 +232,7 @@ gboolean PipelineManager::busCallback(GstBus*, GstMessage* message, gpointer dat
 
 PipelineElement* PipelineManager::getPreviousEnabledElement(const PipelineElement& element) {
     for (auto i = element.id - 1; i < pipeline_elements_.size(); --i) {
-        if (pipeline_elements_.at(i).is_enabled.first) {
+        if (pipeline_elements_.at(i).is_initialized) {
             return &pipeline_elements_.at(i);
         }
     }
@@ -241,7 +241,7 @@ PipelineElement* PipelineManager::getPreviousEnabledElement(const PipelineElemen
 
 PipelineElement* PipelineManager::getNextEnabledElement(const PipelineElement& element) {
     for (auto i = element.id + 1; i != pipeline_elements_.size(); ++i) {
-        if (pipeline_elements_.at(i).is_enabled.first) {
+        if (pipeline_elements_.at(i).is_initialized) {
             return &pipeline_elements_.at(i);
         }
     }
@@ -330,15 +330,15 @@ int PipelineManager::disableOptionalElement(PipelineElement& element) const {
     gst_pad_add_probe(src_peer.get(), GST_PAD_PROBE_TYPE_IDLE, disconnectGstElementProbeCallback,
                       const_cast<PipelineManager*>(this), nullptr);
 
-    element.is_enabled.first = false;
-    element.is_enabled.second = false;
+    element.is_initialized = false;
+    element.is_linked = false;
 
     return EXIT_SUCCESS;
 }
 
 int PipelineManager::enableAllOptionalPipelineElements() {
     for (auto& element: pipeline_elements_) {
-        if (element.is_optional && !element.is_enabled.first && !element.is_enabled.second) {
+        if (element.is_optional && !element.is_initialized && !element.is_linked) {
             if (createGstElement(element) == EXIT_FAILURE) {
                 return EXIT_FAILURE;
             }
@@ -346,7 +346,7 @@ int PipelineManager::enableAllOptionalPipelineElements() {
     }
 
     for (auto& element: pipeline_elements_) {
-        if (element.is_optional && element.is_enabled.first && !element.is_enabled.second) {
+        if (element.is_optional && element.is_initialized && !element.is_linked) {
             if (linkGstElement(element) == EXIT_FAILURE) {
                 return EXIT_FAILURE;
             }
@@ -358,7 +358,7 @@ int PipelineManager::enableAllOptionalPipelineElements() {
 
 int PipelineManager::disableAllOptionalPipelineElements() {
     for (auto& element: pipeline_elements_) {
-        if (element.is_optional && element.is_enabled.second) {
+        if (element.is_optional && element.is_linked) {
             disableOptionalElement(element);
         } else if (element.is_optional) {
             LOG_WARN("Element {} is already disabled", element.toString());
@@ -370,7 +370,7 @@ int PipelineManager::disableAllOptionalPipelineElements() {
 int PipelineManager::enableOptionalPipelineElement(const std::string& element_name) {
     for (auto& element: pipeline_elements_) {
         if (element.name == element_name) {
-            if (element.is_enabled.first && element.is_enabled.second) {
+            if (element.is_initialized && element.is_linked) {
                 LOG_WARN("Element {} is already enabled", element.toString());
                 return EXIT_FAILURE;
             }
@@ -383,7 +383,7 @@ int PipelineManager::enableOptionalPipelineElement(const std::string& element_na
 int PipelineManager::disableOptionalPipelineElement(const std::string& element_name) {
     for (auto& element: pipeline_elements_) {
         if (element.name == element_name) {
-            if (!element.is_enabled.first && !element.is_enabled.second) {
+            if (!element.is_initialized && !element.is_linked) {
                 LOG_WARN("Element {} is already disabled", element.toString());
                 return EXIT_FAILURE;
             }
@@ -395,7 +395,7 @@ int PipelineManager::disableOptionalPipelineElement(const std::string& element_n
 
 int PipelineManager::enableOptionalPipelineBranch(const std::string& branch_name) {
     for (auto& element: pipeline_elements_) {
-        if (element.is_optional && !element.is_enabled.first && !element.is_enabled.second && element.branch == branch_name) {
+        if (element.is_optional && !element.is_initialized && !element.is_linked && element.branch == branch_name) {
             if (createGstElement(element) == EXIT_FAILURE) {
                 return EXIT_FAILURE;
             }
@@ -403,7 +403,7 @@ int PipelineManager::enableOptionalPipelineBranch(const std::string& branch_name
     }
 
     for (auto& element: pipeline_elements_) {
-        if (element.is_optional && element.is_enabled.first && !element.is_enabled.second) {
+        if (element.is_optional && element.is_initialized && !element.is_linked) {
             if (linkGstElement(element) == EXIT_FAILURE) {
                 return EXIT_FAILURE;
             }
@@ -415,7 +415,7 @@ int PipelineManager::enableOptionalPipelineBranch(const std::string& branch_name
 
 int PipelineManager::disableOptionalPipelineBranch(const std::string& branch_name) {
     for (auto& element: pipeline_elements_) {
-        if (element.is_optional && element.is_enabled.second && element.branch == branch_name) {
+        if (element.is_optional && element.is_linked && element.branch == branch_name) {
             disableOptionalElement(element);
         } else if (element.is_optional && element.branch == branch_name) {
             LOG_WARN("Element {} is already disabled", element.toString()); //FIXME: handle to branch, not element
@@ -453,7 +453,7 @@ void PipelineManager::createElementsList(const std::string& file_path) {
 
 PipelineElement& PipelineManager::findTeeElementForBranch(const std::string& branch_name) {
     for (auto& element: pipeline_elements_) {
-        if (element.name == "tee" && element.is_enabled.first && element.type == branch_name) {
+        if (element.name == "tee" && element.is_initialized && element.type == branch_name) {
             return element;
         }
     }
