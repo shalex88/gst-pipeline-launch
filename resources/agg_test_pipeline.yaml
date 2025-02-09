@@ -1,0 +1,22 @@
+pipeline:
+  branches:
+    - name: main
+      elements:
+        - name: videotestsrc
+        - name: nvvidconv
+        - name: tee
+          type: meta_tee
+        - name: queue
+        - name: analyticsaggregator
+          sinkpad: video_sink
+          properties:
+            name: agg
+        - name: fakesink
+
+    - name: meta_tee
+      elements:
+        - name: queue
+        - name: analyticsaggregator
+          sinkpad: sink_0
+          properties:
+            name: agg

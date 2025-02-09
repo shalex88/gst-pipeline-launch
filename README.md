@@ -16,6 +16,7 @@ sudo apt -y install pkg-config bison flex nasm
 
 - Add monitoring for pipeline freezes
 - Handle (memory:NVMM) caps feature
+- Separate PipelineManager to Pipeline and PipelineManager?
 
 ## Known issues
 
@@ -23,3 +24,4 @@ sudo apt -y install pkg-config bison flex nasm
 - Disabling branch that was forks and the fork is still enabled is unsupported
 - Registering multiple branches/elements with the same name is unsupported
 - gst_object_unref errors when disabling branches
+- Tee with more than one branch is unsupported
