@@ -141,7 +141,14 @@ std::error_code PipelineManager::createGstElement(PipelineElement& element) cons
     }
 
     for (const auto& [key, value]: element.properties) {
-        gst_util_set_object_arg(G_OBJECT(element.gst_element), key.c_str(), value.c_str());
+        GParamSpec* paramSpec = g_object_class_find_property(G_OBJECT_GET_CLASS(element.gst_element), key.c_str());
+        if(paramSpec) {
+            gst_util_set_object_arg(G_OBJECT(element.gst_element), key.c_str(), value.c_str());
+        }
+        else {
+            element.properties.erase(key);
+            LOG_WARN("Property {} not found for element {}. Earsing property from element", key, element.name.c_str());
+        }
     }
 
     if (!gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
@@ -193,6 +200,8 @@ std::error_code PipelineManager::play() {
         LOG_ERROR("Failed to create gstreamer main loop");
         return {errno, std::generic_category()};
     }
+    
+    // GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(gst_pipeline_.get()), GST_DEBUG_GRAPH_SHOW_ALL, "custom_pipeline");
     g_main_loop_run(gst_loop_.get());
 
     return {};
