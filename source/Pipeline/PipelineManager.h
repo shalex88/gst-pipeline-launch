@@ -40,6 +40,7 @@ private:
     static GstPadProbeReturn connectGstElementProbeCallback(GstPad* pad, GstPadProbeInfo* info, gpointer data);
     static GstPad* allocateDynamicPad(PipelineElement& element, GstPadDirection direction);
     static GstPad* allocatePad(PipelineElement& element, GstPadDirection direction);
+    std::string generateGstElementUniqueName(const PipelineElement& element) const;
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;

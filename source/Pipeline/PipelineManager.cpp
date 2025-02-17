@@ -127,8 +127,22 @@ std::error_code PipelineManager::linkGstElement(PipelineElement& current_element
     return {};
 }
 
+std::string PipelineManager::generateGstElementUniqueName(const PipelineElement& element) const{
+    LOG_DEBUG("Generating unique name for element: {}", element.toString());
+    std::string unique_name;
+
+    auto unique_name_it = element.properties.find("name");
+    if (unique_name_it != element.properties.end()) {
+        unique_name = unique_name_it->second;
+    }
+    else {
+        unique_name = element.name + std::to_string(element.id);
+    }
+    return std::move(unique_name);
+}
+
 std::error_code PipelineManager::createGstElement(PipelineElement& element) const {
-    auto unique_gst_element_name = element.name + std::to_string(element.id);
+    auto unique_gst_element_name = generateGstElementUniqueName(element);
 
     element.gst_element = gst_element_factory_make(element.name.c_str(), unique_gst_element_name.c_str());
     if (!element.gst_element) {
@@ -159,7 +173,7 @@ std::error_code PipelineManager::createGstElement(PipelineElement& element) cons
     gst_element_sync_state_with_parent(element.gst_element);
 
     element.is_initialized = true;
-    LOG_DEBUG("Created element: {}", element.toString());
+    LOG_DEBUG("Created element: {} with name: {}", element.toString(), unique_gst_element_name);
 
     return {};
 }
