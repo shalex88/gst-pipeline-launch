@@ -4,7 +4,7 @@
 
 PipelineElement::PipelineElement(const unsigned int id, std::string name, std::string type, std::string branch,
                                  std::map<std::string, std::string> properties,
-                                 const bool optional, const bool enabled, GstElement* gst_element)
+                                 const bool optional, GstElement* gst_element)
     : id(id), name(std::move(name)), type(std::move(type)), branch(std::move(branch)),
       properties(std::move(properties)), is_optional(optional), gst_element(gst_element) {
 }

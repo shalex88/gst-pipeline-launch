@@ -20,7 +20,7 @@ PipelineElement PipelineParser::deserializeElement(const YAML::detail::iterator_
         is_optional = true;
     }
 
-    return {id++, name, type, std::move(branch), properties, is_optional, false, nullptr};
+    return {id++, name, type, std::move(branch), properties, is_optional, nullptr};
 }
 
 std::vector<PipelineElement> PipelineParser::getAllElements() const {

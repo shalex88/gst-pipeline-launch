@@ -138,7 +138,23 @@ std::string PipelineManager::generateGstElementUniqueName(const PipelineElement&
     else {
         unique_name = element.name + std::to_string(element.id);
     }
-    return std::move(unique_name);
+    return {unique_name};
+}
+
+void PipelineManager::setGstElementProperty(PipelineElement& element) const{
+    for (auto property_it = element.properties.begin(); property_it != element.properties.end();) {
+        const auto& [key, value] = *property_it;
+        auto param_spec = g_object_class_find_property(G_OBJECT_GET_CLASS(element.gst_element), key.c_str());
+        if(param_spec) {
+            gst_util_set_object_arg(G_OBJECT(element.gst_element), key.c_str(), value.c_str());
+            ++property_it;
+            LOG_TRACE("Set property {} with value {} for element {}", key, value, element.name.c_str());
+        }
+        else {
+            element.properties.erase(property_it++);
+            LOG_WARN("Property {} not found for gst element {}. Earsing property from element", key, element.name.c_str());
+        }
+    }
 }
 
 std::error_code PipelineManager::createGstElement(PipelineElement& element) const {
@@ -154,16 +170,7 @@ std::error_code PipelineManager::createGstElement(PipelineElement& element) cons
         return {errno, std::generic_category()};
     }
 
-    for (const auto& [key, value]: element.properties) {
-        GParamSpec* paramSpec = g_object_class_find_property(G_OBJECT_GET_CLASS(element.gst_element), key.c_str());
-        if(paramSpec) {
-            gst_util_set_object_arg(G_OBJECT(element.gst_element), key.c_str(), value.c_str());
-        }
-        else {
-            element.properties.erase(key);
-            LOG_WARN("Property {} not found for element {}. Earsing property from element", key, element.name.c_str());
-        }
-    }
+    setGstElementProperty(element);
 
     if (!gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
         LOG_ERROR("Failed to add element {} to pipeline", element.toString());
