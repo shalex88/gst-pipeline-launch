@@ -127,7 +127,7 @@ std::error_code PipelineManager::linkGstElement(PipelineElement& current_element
     return {};
 }
 
-std::string PipelineManager::generateGstElementUniqueName(const PipelineElement& element) const{
+std::string PipelineManager::generateGstElementUniqueName(const PipelineElement& element) const {
     LOG_DEBUG("Generating unique name for element: {}", element.toString());
     std::string unique_name;
 
@@ -141,7 +141,7 @@ std::string PipelineManager::generateGstElementUniqueName(const PipelineElement&
     return {unique_name};
 }
 
-void PipelineManager::validateGstElementProperties(PipelineElement& element) const{
+void PipelineManager::validateGstElementProperties(PipelineElement& element) const {
         for (auto property_it = element.properties.begin(); property_it != element.properties.end();) {
             const auto& [key, value] = *property_it;
             if(!g_object_class_find_property(G_OBJECT_GET_CLASS(element.gst_element), key.c_str())) {
@@ -154,16 +154,34 @@ void PipelineManager::validateGstElementProperties(PipelineElement& element) con
         }
 }
 
-void PipelineManager::setGstElementProperty(PipelineElement& element) const{
+void PipelineManager::setGstElementProperty(PipelineElement& element) const {
     for (const auto& [key, value] : element.properties) {
         gst_util_set_object_arg(G_OBJECT(element.gst_element), key.c_str(), value.c_str());
         LOG_TRACE("Set property {} with value {} for element {}", key, value, element.name.c_str());
     }
 }
 
+void PipelineManager::createMuxGstElement(PipelineElement& element, const std::string unique_element_name) const {
+    auto mux_element = mux_elements_.find(unique_element_name);
+    if(mux_element != mux_elements_.end()) {
+        element.gst_element = mux_element->second;
+        element.is_initialized = true;
+        LOG_DEBUG("Mux element already created: {}", element.toString());
+    }
+    else {
+        element.gst_element = gst_element_factory_make(element.name.c_str(), unique_element_name.c_str());
+
+    }
+}
+
+bool PipelineManager::doesGstElementExist(const std::string& element_name) const {
+    auto element = gst_bin_get_by_name(GST_BIN(gst_pipeline_.get()), element_name.c_str());
+    return {element != nullptr};
+}
+
 std::error_code PipelineManager::createGstElement(PipelineElement& element) const {
     auto unique_gst_element_name = generateGstElementUniqueName(element);
-
+    
     element.gst_element = gst_element_factory_make(element.name.c_str(), unique_gst_element_name.c_str());
     if (!element.gst_element) {
         LOG_ERROR("Failed to create pipeline element {}", element.toString());
