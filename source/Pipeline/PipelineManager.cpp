@@ -141,19 +141,23 @@ std::string PipelineManager::generateGstElementUniqueName(const PipelineElement&
     return {unique_name};
 }
 
+void PipelineManager::validateGstElementProperties(PipelineElement& element) const{
+        for (auto property_it = element.properties.begin(); property_it != element.properties.end();) {
+            const auto& [key, value] = *property_it;
+            if(!g_object_class_find_property(G_OBJECT_GET_CLASS(element.gst_element), key.c_str())) {
+                element.properties.erase(property_it++);
+                LOG_WARN("Property {} not found for gst element {}. Earsing property from element", key, element.name.c_str());
+            }
+            else {
+                ++property_it;
+            }
+        }
+}
+
 void PipelineManager::setGstElementProperty(PipelineElement& element) const{
-    for (auto property_it = element.properties.begin(); property_it != element.properties.end();) {
-        const auto& [key, value] = *property_it;
-        auto param_spec = g_object_class_find_property(G_OBJECT_GET_CLASS(element.gst_element), key.c_str());
-        if(param_spec) {
-            gst_util_set_object_arg(G_OBJECT(element.gst_element), key.c_str(), value.c_str());
-            ++property_it;
-            LOG_TRACE("Set property {} with value {} for element {}", key, value, element.name.c_str());
-        }
-        else {
-            element.properties.erase(property_it++);
-            LOG_WARN("Property {} not found for gst element {}. Earsing property from element", key, element.name.c_str());
-        }
+    for (const auto& [key, value] : element.properties) {
+        gst_util_set_object_arg(G_OBJECT(element.gst_element), key.c_str(), value.c_str());
+        LOG_TRACE("Set property {} with value {} for element {}", key, value, element.name.c_str());
     }
 }
 
@@ -170,6 +174,7 @@ std::error_code PipelineManager::createGstElement(PipelineElement& element) cons
         return {errno, std::generic_category()};
     }
 
+    validateGstElementProperties(element);
     setGstElementProperty(element);
 
     if (!gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element)) {

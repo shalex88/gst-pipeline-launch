@@ -41,6 +41,7 @@ private:
     static GstPad* allocateDynamicPad(PipelineElement& element, GstPadDirection direction);
     static GstPad* allocatePad(PipelineElement& element, GstPadDirection direction);
     std::string generateGstElementUniqueName(const PipelineElement& element) const;
+    void validateGstElementProperties(PipelineElement& element) const;
     void setGstElementProperty(PipelineElement& element) const;
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
