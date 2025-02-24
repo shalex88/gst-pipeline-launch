@@ -201,6 +201,7 @@ std::error_code PipelineManager::createGstElement(PipelineElement& element) cons
         gst_element_sync_state_with_parent(element.gst_element);
         
         LOG_DEBUG("Created element: {} with name: {}", element.toString(), unique_gst_element_name);
+        LOG_TRACE("Element sink_pad: {}", element.sink_pad_name.empty() ? "none" : element.sink_pad_name);
     }
     else {
         if (element.type == "mux") {
