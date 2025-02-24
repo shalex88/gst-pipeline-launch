@@ -8,6 +8,7 @@ pipeline:
           type: meta_tee
         - name: queue
         - name: analyticsaggregator
+          type: mux
           sinkpad: video_sink
           properties:
             name: agg
@@ -17,6 +18,7 @@ pipeline:
       elements:
         - name: queue
         - name: analyticsaggregator
+          type: mux
           sinkpad: sink_0
           properties:
             name: agg

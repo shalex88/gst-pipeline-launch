@@ -161,20 +161,17 @@ void PipelineManager::setGstElementProperty(PipelineElement& element) const {
     }
 }
 
-void PipelineManager::createMuxGstElement(PipelineElement& element, const std::string unique_element_name) const {
-    auto mux_element = mux_elements_.find(unique_element_name);
-    if(mux_element != mux_elements_.end()) {
-        element.gst_element = mux_element->second;
-        element.is_initialized = true;
-        LOG_DEBUG("Mux element already created: {}", element.toString());
-    }
-    else {
-        element.gst_element = gst_element_factory_make(element.name.c_str(), unique_element_name.c_str());
-
-    }
+std::error_code PipelineManager::retrieveMuxGstElement(PipelineElement& element, const std::string unique_element_name) const {
+    element.gst_element = gst_bin_get_by_name(GST_BIN(gst_pipeline_.get()), unique_element_name.c_str());
+    if (!element.gst_element) {
+        LOG_ERROR("Failed to retrieve mux element {}", element.toString());
+        return {errno, std::generic_category()};
+    } 
+        LOG_DEBUG("Mux element retrieved from pipeline: {}", element.toString());
+        return {};
 }
 
-bool PipelineManager::doesGstElementExist(const std::string& element_name) const {
+bool PipelineManager::isGstElementInPipeline(const std::string& element_name) const {
     auto element = gst_bin_get_by_name(GST_BIN(gst_pipeline_.get()), element_name.c_str());
     return {element != nullptr};
 }
@@ -182,28 +179,40 @@ bool PipelineManager::doesGstElementExist(const std::string& element_name) const
 std::error_code PipelineManager::createGstElement(PipelineElement& element) const {
     auto unique_gst_element_name = generateGstElementUniqueName(element);
     
-    element.gst_element = gst_element_factory_make(element.name.c_str(), unique_gst_element_name.c_str());
-    if (!element.gst_element) {
-        LOG_ERROR("Failed to create pipeline element {}", element.toString());
-        return {errno, std::generic_category()};
-    }
-    if (!GST_IS_ELEMENT(element.gst_element)) {
-        LOG_ERROR("Non valid pipeline element {}", element.toString());
-        return {errno, std::generic_category()};
-    }
+    if(!isGstElementInPipeline(unique_gst_element_name)) {
+        element.gst_element = gst_element_factory_make(element.name.c_str(), unique_gst_element_name.c_str());
+        if (!element.gst_element) {
+            LOG_ERROR("Failed to create pipeline element {}", element.toString());
+            return {errno, std::generic_category()};
+        }
+        if (!GST_IS_ELEMENT(element.gst_element)) {
+            LOG_ERROR("Non valid pipeline element {}", element.toString());
+            return {errno, std::generic_category()};
+        }
 
-    validateGstElementProperties(element);
-    setGstElementProperty(element);
+        validateGstElementProperties(element);
+        setGstElementProperty(element);
 
-    if (!gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
-        LOG_ERROR("Failed to add element {} to pipeline", element.toString());
-        return {errno, std::generic_category()};
+        if (!gst_bin_add(GST_BIN(gst_pipeline_.get()), element.gst_element)) {
+            LOG_ERROR("Failed to add element {} to pipeline", element.toString());
+            return {errno, std::generic_category()};
+        }
+
+        gst_element_sync_state_with_parent(element.gst_element);
+        
+        LOG_DEBUG("Created element: {} with name: {}", element.toString(), unique_gst_element_name);
     }
-
-    gst_element_sync_state_with_parent(element.gst_element);
+    else {
+        if (element.type == "mux") {
+            retrieveMuxGstElement(element, unique_gst_element_name);
+        }
+        else {
+            LOG_ERROR("Element {} already exists in pipeline", element.toString());
+            return {errno, std::generic_category()};
+        }
+    }
 
     element.is_initialized = true;
-    LOG_DEBUG("Created element: {} with name: {}", element.toString(), unique_gst_element_name);
 
     return {};
 }

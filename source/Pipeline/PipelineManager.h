@@ -43,13 +43,12 @@ private:
     std::string generateGstElementUniqueName(const PipelineElement& element) const;
     void validateGstElementProperties(PipelineElement& element) const;
     void setGstElementProperty(PipelineElement& element) const;
-    void createMuxGstElement(PipelineElement& element, const std::string unique_element_name) const;
-    bool doesGstElementExist(const std::string& element_name) const;
+    std::error_code retrieveMuxGstElement(PipelineElement& element, const std::string unique_element_name) const;
+    bool isGstElementInPipeline(const std::string& element_name) const;
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;
     std::vector<PipelineElement> pipeline_elements_;
-    std::map<std::string, GstElement*> mux_elements_;
     mutable std::mutex mutex_;
 };
 
