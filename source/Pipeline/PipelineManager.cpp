@@ -543,29 +543,67 @@ GstPad* PipelineManager::allocateDynamicPad(PipelineElement& element, GstPadDire
     return gst_element_request_pad_simple(element.gst_element, pad_name.c_str());
 }
 
+GstPad* PipelineManager::requestExplicitPadName(PipelineElement& element, GstPadDirection direction) {
+    GstPad *pad = nullptr;
+    std::string padName = (direction == GST_PAD_SINK) ? element.sink_pad_name : ""; /*element.src_pad_name;*/
+
+    if (!padName.empty()) {
+        LOG_DEBUG("Requesting explicit pad name: {}",padName);
+        pad = gst_element_request_pad_simple(element.gst_element, padName.c_str());
+    }
+    return pad;
+}
+
+GstPadTemplate* PipelineManager::findSuitablePadTemplate(PipelineElement& element, GstPadDirection direction) {
+    auto *pad_templates = gst_element_get_pad_template_list(element.gst_element);
+    for (const auto *l = pad_templates; l; l = l->next) {
+        auto *pad_template = static_cast<GstPadTemplate*>(l->data);
+        if (GST_PAD_TEMPLATE_DIRECTION(pad_template) == direction) {
+            return pad_template;
+        }
+    }
+    return nullptr;
+}
+
+std::string PipelineManager::generateDynamicPadName(const GstPadTemplate* pad_template) {
+    LOG_DEBUG("Generating dynamic pad name from template: {}", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
+    std::string generatedPadName = GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template);
+    if (generatedPadName.find('%') != std::string::npos) {
+        static unsigned int pad_counter = 0;  // Unique counter for naming
+        generatedPadName.replace(generatedPadName.find('%'), 2, std::to_string(pad_counter++));
+    }
+    return generatedPadName;
+}
+
 GstPad* PipelineManager::allocatePad(PipelineElement& element, GstPadDirection direction) {
-    auto pad = allocateDynamicPad(element, direction);  
-    if(!pad){
-        switch (direction) {
-            case GST_PAD_SRC:
-                pad = gst_element_get_static_pad(element.gst_element, "src");
-                if (!pad) {
-                    LOG_ERROR("Failed to get the src pad of the {}", element.name);
-                    return nullptr;
-                }
+    GstPad *pad = requestExplicitPadName(element, direction);
+    
+    if(!pad)
+    {
+        auto pad_template = findSuitablePadTemplate(element, direction);
+        
+        if (pad_template) {
+            switch (GST_PAD_TEMPLATE_PRESENCE(pad_template))
+            {
+            case GST_PAD_ALWAYS:
+                LOG_DEBUG("Found a static pad template {} for element {}", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template), element.toString());
+                pad = gst_element_get_static_pad(element.gst_element, GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
                 break;
-            case GST_PAD_SINK:
-                pad = gst_element_get_static_pad(element.gst_element, "video_sink");
-                if (!pad) {
-                    pad = gst_element_get_static_pad(element.gst_element, "sink");
-                    if (!pad) {
-                        LOG_ERROR("Failed to get the sink pad of the {}", element.name);
-                        return nullptr;
-                    }
-                }   
+            case GST_PAD_REQUEST:
+            {
+                LOG_DEBUG("Found a dynamic pad template {} for element {}", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template), element.toString());
+                auto generatedPadName = generateDynamicPadName(pad_template);
+                LOG_DEBUG("Requesting pad: {} from template: {}", generatedPadName, GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
+                pad = gst_element_request_pad_simple(element.gst_element, generatedPadName.c_str());
+            }
                 break;
             default:
-                throw std::invalid_argument("Invalid GstPadDirection");
+                LOG_WARN("Pad template {} presence is not supported", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
+                break;
+            }
+        }
+        else {
+            LOG_ERROR("No compatible pad template found for direction: {}", (direction == GST_PAD_SINK ? "SINK" : "SRC"));
         }
     }
 
