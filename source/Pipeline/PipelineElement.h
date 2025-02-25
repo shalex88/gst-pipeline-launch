@@ -21,7 +21,6 @@ public:
     bool is_optional {false};
     bool is_initialized {false};
     bool is_linked {false};
-    unsigned int dynamic_pad_unique_index {0};
     GstElement* gst_element {nullptr};
 
     std::string toString() const;

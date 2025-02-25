@@ -38,7 +38,6 @@ private:
     static gint busCallback(GstBus* bus, GstMessage* message, gpointer data);
     static GstPadProbeReturn disconnectGstElementProbeCallback(GstPad* src_peer, GstPadProbeInfo* info, gpointer data);
     static GstPadProbeReturn connectGstElementProbeCallback(GstPad* pad, GstPadProbeInfo* info, gpointer data);
-    static GstPad* allocateDynamicPad(PipelineElement& element, GstPadDirection direction);
     static GstPadTemplate* findSuitablePadTemplate(PipelineElement& element, GstPadDirection direction);
     static std::string generateDynamicPadName(const GstPadTemplate* pad_template);
     static GstPad* requestExplicitPadName(PipelineElement& element, GstPadDirection direction);

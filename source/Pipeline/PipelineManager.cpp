@@ -524,25 +524,6 @@ PipelineElement& PipelineManager::findTeeElementForBranch(const std::string& bra
     throw std::runtime_error("Tee element not found");
 }
 
-GstPad* PipelineManager::allocateDynamicPad(PipelineElement& element, GstPadDirection direction) {
-    std::string base_pad_name {};
-    switch (direction) {
-        case GST_PAD_SRC:
-            base_pad_name="src";
-            break;
-        case GST_PAD_SINK:
-            base_pad_name="sink";
-            break;
-        default:
-            throw std::invalid_argument("Invalid GstPadDirection");
-    }
-
-    auto pad_name = base_pad_name + "_" + std::to_string(element.dynamic_pad_unique_index++);
-    LOG_TRACE("Requesting dynamic pad \"{}\" for {}", pad_name, element.name);
-
-    return gst_element_request_pad_simple(element.gst_element, pad_name.c_str());
-}
-
 GstPad* PipelineManager::requestExplicitPadName(PipelineElement& element, GstPadDirection direction) {
     GstPad *pad = nullptr;
     std::string padName = (direction == GST_PAD_SINK) ? element.sink_pad_name : ""; /*element.src_pad_name;*/
