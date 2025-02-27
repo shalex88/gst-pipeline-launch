@@ -378,7 +378,7 @@ std::vector<GstPad*> PipelineManager::getLinkedSinkPads(GstElement* element) con
         GValue item = G_VALUE_INIT;
         while (gst_iterator_next(it, &item) == GST_ITERATOR_OK) {
             GstPad* pad = static_cast<GstPad*>(g_value_get_object(&item));
-            if (pad) {
+            if (pad && gst_pad_is_linked(pad)) {
                 sink_pads.push_back(pad);
             }
             g_value_unset(&item);
