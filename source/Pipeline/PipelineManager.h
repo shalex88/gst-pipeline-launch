@@ -47,6 +47,7 @@ private:
     void setGstElementProperty(PipelineElement& element) const;
     std::error_code retrieveMuxGstElement(PipelineElement& element, const std::string unique_element_name) const;
     bool isGstElementInPipeline(const std::string& element_name) const;
+    std::vector<GstPad*> getLinkedSinkPads(GstElement* element) const;
     std::shared_ptr<GMainLoop> gst_loop_;
     std::shared_ptr<GstElement> gst_pipeline_;
     std::string pipeline_file_;
