@@ -370,6 +370,59 @@ GstPadProbeReturn PipelineManager::disconnectGstElementProbeCallback(GstPad* src
     return GST_PAD_PROBE_REMOVE;
 }
 
+GstPadProbeReturn PipelineManager::disconnectBranchProbeCallback(GstPad* src_peer, GstPadProbeInfo* info, gpointer data) {
+    const auto pipeline_manager = static_cast<PipelineManager*>(data);
+
+    // Get the peer pad to determine the first element of the branch
+    GstPad* peer_pad = gst_pad_get_peer(src_peer);
+    if (!peer_pad) {
+        LOG_ERROR("Failed to get peer pad for pad: {}", gst_pad_get_name(src_peer));
+        return GST_PAD_PROBE_REMOVE;
+    }
+
+    GstElement* first_element = gst_pad_get_parent_element(peer_pad);
+    gst_object_unref(peer_pad);
+
+    if (!first_element) {
+        LOG_ERROR("Failed to get first element in the branch for pad: {}", gst_pad_get_name(src_peer));
+        return GST_PAD_PROBE_REMOVE;
+    }
+
+    LOG_DEBUG("Unlinking pad: {} from first element: {}", gst_pad_get_name(src_peer), gst_element_get_name(first_element));
+
+    // Unlink the pad from the first element
+    if (!gst_pad_unlink(src_peer, peer_pad)) {
+        spdlog::error("Failed to unlink pad: {}", gst_pad_get_name(src_peer));
+        gst_object_unref(first_element);
+        return GST_PAD_PROBE_REMOVE;
+    }
+
+    // Iterate over all pipeline elements and remove those in the branch
+    for (const auto& element : pipeline_manager->pipeline_elements_) {
+        if (!element.gst_element) {
+            continue;
+        }
+
+        // Find the source pad connecting to the first element
+        GstPad* src_pad = findLinkedSrcPad(first_element, element.gst_element);
+        if (src_pad) {
+            spdlog::debug("Removing element: {}", element.name);
+
+            // Set the element to NULL state and remove it from the pipeline
+            gst_element_set_state(element.gst_element, GST_STATE_NULL);
+            GstObject* parent = gst_element_get_parent(element.gst_element);
+            if (parent) {
+                gst_bin_remove(GST_BIN(parent), element.gst_element);
+                gst_object_unref(parent);
+            }
+            gst_object_unref(src_pad);
+        }
+    }
+
+    gst_object_unref(first_element);
+    return GST_PAD_PROBE_REMOVE;
+}
+
 std::vector<GstPad*> PipelineManager::getLinkedSinkPads(GstElement* element) const {
     std::vector<GstPad*> sink_pads;
     GstIterator* it = gst_element_iterate_sink_pads(element);
@@ -548,6 +601,48 @@ PipelineElement& PipelineManager::findTeeElementForBranch(const std::string& bra
 
     throw std::runtime_error("Tee element not found");
 }
+
+PipelineElement& PipelineManager::findFirstElementInBranch(const std::string& branch_name) {
+    for (auto& element: pipeline_elements_) {
+        if (element.branch == branch_name) {
+            return element;
+        }
+    }
+
+    throw std::runtime_error("Branch not found");
+}
+
+GstPad* PipelineManager::findLinkedSrcPad(GstElement* upstream_element, GstElement* downstream_element) {
+    GstPad* source_pad = nullptr;
+
+    GstIterator* it = gst_element_iterate_sink_pads(downstream_element);
+    GValue item = G_VALUE_INIT;
+
+    while (gst_iterator_next(it, &item) == GST_ITERATOR_OK) {
+        GstPad* sink_pad = static_cast<GstPad*>(g_value_get_object(&item));
+        
+        // Get the peer pad of the sink pad
+        GstPad* peer_pad = gst_pad_get_peer(sink_pad);
+        if (peer_pad) {
+            GstElement* parent_element = gst_pad_get_parent_element(peer_pad);
+            
+            // Check if the peer pad belongs to the upstream element
+            if (parent_element == upstream_element) {
+                source_pad = peer_pad;  // Found the source pad
+                gst_object_unref(parent_element);
+                break;
+            }
+            
+            gst_object_unref(parent_element);
+            gst_object_unref(peer_pad);
+        }
+        g_value_unset(&item);
+    }
+    
+    gst_iterator_free(it);
+    return source_pad;
+}
+
 
 GstPad* PipelineManager::requestExplicitPadName(PipelineElement& element, GstPadDirection direction) {
     GstPad *pad = nullptr;
