@@ -28,7 +28,10 @@ private:
     PipelineElement& findTeeElementForBranch(const std::string& branch_name);
     PipelineElement& findFirstElementInBranch(const std::string& branch_name);
     static GstPad* findLinkedSrcPad(GstElement* upstream_element, GstElement* downstream_element);
+    static GstPad* findGstPadByName(GstElement* element, const std::string& pad_name);
+    PipelineElement* findPipelineElementByGstElement(const GstElement* gst_element);
     std::error_code createGstElement(PipelineElement& element) const;
+    void resetPipelineElement(PipelineElement& element) const;
     std::error_code linkGstElement(PipelineElement& current_element);
     std::error_code createGstPipeline(std::vector<PipelineElement>& pipeline);
     void createElementsList(const std::string& file_path);
@@ -41,6 +44,8 @@ private:
     static GstPadProbeReturn disconnectGstElementProbeCallback(GstPad* src_peer, GstPadProbeInfo* info, gpointer data);
     static GstPadProbeReturn connectGstElementProbeCallback(GstPad* pad, GstPadProbeInfo* info, gpointer data);
     static GstPadProbeReturn disconnectBranchProbeCallback(GstPad* src_peer, GstPadProbeInfo* info, gpointer data);
+    void onBranchDisconnection(const GstElement* gst_element);
+    void disconnectMuxElement(PipelineElement& element) const;
     static GstPadTemplate* findSuitablePadTemplate(PipelineElement& element, GstPadDirection direction);
     static std::string generateDynamicPadName(const GstPadTemplate* pad_template);
     static GstPad* requestExplicitPadName(PipelineElement& element, GstPadDirection direction);

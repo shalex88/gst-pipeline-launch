@@ -15,6 +15,7 @@ pipeline:
         - name: fakesink
 
     - name: meta_tee
+      optional: true
       elements:
         - name: queue
         - name: analyticsaggregator
