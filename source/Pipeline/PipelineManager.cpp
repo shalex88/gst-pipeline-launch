@@ -391,54 +391,69 @@ GstPadProbeReturn PipelineManager::disconnectBranchProbeCallback(GstPad* tee_src
     LOG_DEBUG("Unlinking pad: {} from first element: {}", gst_pad_get_name(tee_src_pad), gst_element_get_name(first_element));
 
     // Unlink the pad from the first element
+    gst_element_set_state(first_element, GST_STATE_NULL);
+
     if (!gst_pad_unlink(tee_src_pad, peer_sink_pad)) {
-        spdlog::error("Failed to unlink pad: {}", gst_pad_get_name(tee_src_pad));
-        gst_element_set_state(first_element, GST_STATE_NULL);
-        gst_bin_remove(GST_BIN(pipeline_manager->gst_pipeline_.get()), first_element);
+        LOG_ERROR("Failed to unlink pad: {}", gst_pad_get_name(tee_src_pad));
         gst_object_unref(first_element);
         return GST_PAD_PROBE_REMOVE;
     }
-    pipeline_manager->onBranchDisconnection(first_element);
 
+    pipeline_manager->onBranchDisconnection(first_element);
+    gst_object_unref(first_element);
+    
     return GST_PAD_PROBE_REMOVE;
 }
 
 void PipelineManager::onBranchDisconnection(const GstElement* gst_element) {
+    LOG_TRACE("On branch disconnection, first element: {}", gst_element_get_name(gst_element));
     auto pipeline_element = findPipelineElementByGstElement(gst_element);
     if (!pipeline_element) {
         LOG_ERROR("Failed to get pipeline element for element: {}", gst_element_get_name(gst_element));
         return;
     }
-    for (auto element = pipeline_element; element->branch != pipeline_element->branch; element++) {
-        
-        gst_element_set_state(element->gst_element, GST_STATE_NULL);
-        
+    for (auto element = pipeline_element; element->branch == pipeline_element->branch; element++) {
+        LOG_DEBUG("Disconnecting element: {}", element->toString());
         if(element->type == "mux") {
-            disconnectMuxElement(*pipeline_element);
+            disconnectMuxElement(*element);
         }
         else {
+            LOG_DEBUG("removing element: {}", element->toString());
             gst_bin_remove(GST_BIN(gst_pipeline_.get()), element->gst_element);
         }
 
         resetPipelineElement(*element);
     }
-    LOG_DEBUG("Branch disconnected from element: {}", gst_element_get_name(gst_element));
+    LOG_DEBUG("Branch {} is disconnected", pipeline_element->branch);
 }
 
 void PipelineManager::disconnectMuxElement(PipelineElement& element) const {
-    auto sink_pads = getLinkedSinkPads(element.gst_element);
-    if (sink_pads.size() > 1) { // multiple linked pads
-        auto sink_pad = findGstPadByName(element.gst_element, element.sink_pad_name);
-        if (sink_pad) {
-            auto peer_pad = gst_pad_get_peer(sink_pads.front());
-            gst_pad_unlink(sink_pads.front(), peer_pad);
+    LOG_DEBUG("Disconnecting mux element: {}", element.toString());
+    auto sink_pad = findGstPadByName(element.gst_element, element.sink_pad_name);
+    if (sink_pad) {
+        // If this is a request pad, release it properly
+        auto sink_pad_tmpl = gst_pad_get_pad_template(sink_pad);
+        if (sink_pad_tmpl && GST_PAD_TEMPLATE_PRESENCE(sink_pad_tmpl) == GST_PAD_REQUEST) {
+            LOG_DEBUG("Releasing request pad: {} for element {}", element.sink_pad_name, element.toString());
+            gst_element_release_request_pad(element.gst_element, sink_pad);
         }
-        LOG_ERROR("Failed to get sink pad {} for element {}", element.sink_pad_name, element.toString());
+        else {
+            LOG_TRACE("Sink pad {} is not a request pad", element.sink_pad_name);
+        }
+        gst_object_unref(sink_pad);
     }
     else {
+        LOG_ERROR("Failed to get sink pad {} for element {}", element.sink_pad_name, element.toString());
+    }
+
+    auto sink_pads = getLinkedSinkPads(element.gst_element);
+    if (sink_pads.size() == 0) { // multiple linked pads
+        LOG_DEBUG("Element {} has no linked pads, removing element from pipeline", element.toString());
         gst_bin_remove(GST_BIN(gst_pipeline_.get()), element.gst_element);
     }
-    
+    else {
+        LOG_DEBUG("Element {} has linked pads, not removing from pipeline", element.toString());
+    }
 }
 
 void PipelineManager::resetPipelineElement(PipelineElement& element) const {
@@ -448,6 +463,7 @@ void PipelineManager::resetPipelineElement(PipelineElement& element) const {
 }
 
 std::vector<GstPad*> PipelineManager::getLinkedSinkPads(GstElement* element) const {
+    LOG_TRACE("Getting linked sink pads for element: {}", gst_element_get_name(element));
     std::vector<GstPad*> sink_pads;
     GstIterator* it = gst_element_iterate_sink_pads(element);
 
@@ -651,7 +667,7 @@ PipelineElement& PipelineManager::findFirstElementInBranch(const std::string& br
 
 GstPad* PipelineManager::findLinkedSrcPad(GstElement* upstream_element, GstElement* downstream_element) {
     GstPad* source_pad = nullptr;
-
+    LOG_TRACE("Finding linked source pad for downstream element: {}", gst_element_get_name(downstream_element));
     GstIterator* it = gst_element_iterate_sink_pads(downstream_element);
     GValue item = G_VALUE_INIT;
 
