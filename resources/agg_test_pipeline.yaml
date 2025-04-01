@@ -12,10 +12,11 @@ pipeline:
           sinkpad: video_sink
           properties:
             name: agg
-        - name: fakesink
+            silent: true
+        - name: nv3dsink
 
     - name: meta_tee
-      optional: true
+      optional: false
       elements:
         - name: queue
         - name: analyticsaggregator

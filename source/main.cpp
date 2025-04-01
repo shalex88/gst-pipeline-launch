@@ -1,6 +1,7 @@
 #include <filesystem>
 #include "Logger/Logger.h"
 #include "cxxopts.hpp"
+#include <gst/gst.h>
 #include "App/App.h"
 
 AppConfig parse_command_line_arguments(const int argc, const char* argv[]) {
@@ -27,12 +28,51 @@ AppConfig parse_command_line_arguments(const int argc, const char* argv[]) {
     return config;
 }
 
+// TODO: place this function in a appropriate separate file
+void custom_log_handler(GstDebugCategory* category, GstDebugLevel level, const gchar* file, const gchar* function, gint line, GObject* object, GstDebugMessage* message, gpointer user_data) {
+    const gchar* log_message = gst_debug_message_get(message);
+    const gchar* object_name = "";
+  
+    if (object && GST_IS_PAD(object)) {
+        const gchar* parent_name = GST_OBJECT_PARENT(object) ? GST_OBJECT_NAME(GST_OBJECT_PARENT(object)) : "unknown";
+        const gchar* pad_name = GST_OBJECT_NAME(object);
+        object_name = g_strdup_printf("%s:%s", parent_name, pad_name);
+    }
+    
+    std::string log_print = fmt::format("[{}()<{}>] {}", function, object_name, log_message);
+
+    switch (level) {
+        case GST_LEVEL_ERROR:
+            LOG_ERROR("{}", log_print);
+            break;
+        case GST_LEVEL_WARNING:
+            LOG_WARN("{}", log_print);
+            break;
+        case GST_LEVEL_INFO:
+            LOG_INFO("{}", log_print);
+            break;
+        case GST_LEVEL_DEBUG:
+            LOG_DEBUG("{}", log_print);
+            break;
+        case GST_LEVEL_TRACE:
+            LOG_TRACE("{}", log_print);
+            break;
+        default:
+            break;
+    }
+}
+
+// TODO: place gst debug configuration in a separate file
 void configure_logger(const bool verbose) {
+    gst_debug_add_log_function(custom_log_handler, nullptr, nullptr);
+    gst_debug_remove_log_function(gst_debug_log_default);
+
     if (verbose) {
-        Logger::SET_LOG_LEVEL(LoggerInterface::LogLevel::Trace);
-        LOG_INFO("Verbose logging enabled");
+        SET_LOG_LEVEL(LoggerInterface::LogLevel::Trace);
+        gst_debug_set_threshold_from_string("GST_SCHEDULING:5", TRUE);
+        gst_debug_set_default_threshold(GST_LEVEL_INFO);
     } else {
-        Logger::SET_LOG_LEVEL(LoggerInterface::LogLevel::Info);
+        SET_LOG_LEVEL(LoggerInterface::LogLevel::Info);
     }
 }
 
