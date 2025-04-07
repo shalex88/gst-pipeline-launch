@@ -405,6 +405,32 @@ GstPadProbeReturn PipelineManager::disconnectBranchProbeCallback(GstPad* tee_src
     return GST_PAD_PROBE_REMOVE;
 }
 
+GstPadProbeReturn PipelineManager::connectBranchProbeCallback(GstPad* tee_sink_pad, GstPadProbeInfo* info, gpointer data) {
+    const auto pipeline_manager = static_cast<PipelineManager*>(data);
+    pipeline_manager->onBranchConnection(GST_PAD_PARENT(tee_sink_pad));
+
+    return GST_PAD_PROBE_REMOVE;
+}
+
+void PipelineManager::onBranchConnection(const GstElement* tee_element) {
+    LOG_TRACE("On branch connection, tee element: {}", gst_element_get_name(tee_element));
+    const auto tee = findPipelineElementByGstElement(tee_element);
+    if (tee) {
+        for (auto& element: pipeline_elements_) {
+            if (element.is_optional && element.is_initialized && !element.is_linked) {
+                if (auto ec = linkGstElement(element)) {
+                    LOG_ERROR("Failed to link {} to {}", tee->toString(), element.toString());
+                } else {
+                    LOG_DEBUG("Linked {} to {}", tee->toString(), element.toString());
+                }
+            }
+        }
+    }
+    else {
+        LOG_ERROR("Failed to get tee element for element: {}", gst_element_get_name(tee_element));
+    }
+}
+
 void PipelineManager::onBranchDisconnection(const GstElement* gst_element) {
     LOG_TRACE("On branch disconnection, first element: {}", gst_element_get_name(gst_element));
     auto pipeline_element = findPipelineElementByGstElement(gst_element);
@@ -582,14 +608,14 @@ std::error_code PipelineManager::enableOptionalPipelineBranch(const std::string&
             }
         }
     }
-
-    for (auto& element: pipeline_elements_) {
-        if (element.is_optional && element.is_initialized && !element.is_linked) {
-            if (auto ec = linkGstElement(element)) {
-                return {errno, std::generic_category()};
-            }
-        }
+    auto tee_element = findTeeElementForBranch(branch_name);
+    auto tee_sink_pad = findGstPadByName(tee_element.gst_element, "sink");
+    if (!tee_sink_pad) {
+        LOG_ERROR("Failed to get sink pad for tee element {}", tee_element.toString());
+        return {errno, std::generic_category()};
     }
+
+    gst_pad_add_probe(tee_sink_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, connectBranchProbeCallback, this, nullptr);
 
     return {};
 }
