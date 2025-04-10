@@ -8,18 +8,12 @@ pipeline:
         - name: h264parse
         - name: nvv4l2decoder
         - name: tee
-          type: meta_tee
+          type: atr_tee
         - name: queue
-        - name: analyticsaggregator
-          type: mux
-          sinkpad: video_sink
-          properties:
-            name: agg
-            silent: true
-        - name: nvdsosd
-        - name: nv3dsink
-
-    - name: meta_tee
+        - name: nvvideoconvert
+        - name: fpsdisplaysink
+        
+    - name: atr_tee
       optional: true
       elements:
         - name: queue
@@ -32,8 +26,8 @@ pipeline:
         - name: nvinfer
           properties:
             config-file-path: /home/fronti/Downloads/Primary_Detector/config.yml
-        - name: analyticsaggregator
-          type: mux
-          sinkpad: sink_0
+        - name: nvdsosd
+        - name: nvvideoconvert
+        - name: fpsdisplaysink
           properties:
-            name: agg
+            sync: false
