@@ -445,6 +445,7 @@ void PipelineManager::onBranchDisconnection(const GstElement* gst_element) {
         }
         else {
             LOG_DEBUG("removing element: {}", element->toString());
+            gst_element_set_state(element->gst_element, GST_STATE_NULL);
             gst_bin_remove(GST_BIN(gst_pipeline_.get()), element->gst_element);
         }
 
