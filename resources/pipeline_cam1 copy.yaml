@@ -20,6 +20,9 @@ pipeline:
           properties:
             location: rtsp://localhost:8554/stream1
 
+# FIXME: not working when the branch is optional
+# FIXME: warning: Branch atr_tee is already disabled while it suppose to be enabled
+# FIXME: tee is linked to internal elements (nvstreammux, nvinfer, nvvideoconvert, nvdsosd, nvv4l2h264enc)
     - name: atr_tee
       optional: true
       elements:
@@ -32,10 +35,19 @@ pipeline:
         - name: nvinfer
           properties:
             config-file-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/infer_config.yml
+        # - name: nvmsgconv
+          # optional: true
+          # properties:
+          #   config: /home/fronti/project/video/gst-pipeline-launch/resources/message/msgconv_config.yml
+          #   msg2p-lib: /opt/nvidia/deepstream/deepstream/lib/libnvds_msgconv.so
+          #   debug-payload-dir: /home/fronti/project/video/tests/json_output
+          #   msg2p-newapi: true
+          #   frame-interval: 1
         - name: nvvideoconvert 
           properties:
             disable-passthrough: true
         - name: nvdsosd
+          # optional: true
         - name: nvv4l2h264enc
         - name: rtspclientsink
           properties:

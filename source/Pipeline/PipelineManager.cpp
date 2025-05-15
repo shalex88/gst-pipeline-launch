@@ -32,7 +32,7 @@ std::error_code PipelineManager::linkElements(PipelineElement& source, PipelineE
     }
     
     if (gst_pad_link(src_pad, sink_pad) != GST_PAD_LINK_OK) {
-        LOG_ERROR("Failed to link tee to element");
+        LOG_ERROR("Failed to link element {} to element {}", source.name, destination.name);
         gst_object_unref(src_pad);
         gst_object_unref(sink_pad);
         return {errno, std::generic_category()};
@@ -429,6 +429,7 @@ void PipelineManager::onBranchConnection(const GstElement* tee_element) {
     else {
         LOG_ERROR("Failed to get tee element for element: {}", gst_element_get_name(tee_element));
     }
+    LOG_DEBUG("Branch {} is connected", tee->type);
 }
 
 void PipelineManager::onBranchDisconnection(const GstElement* gst_element) {
@@ -632,6 +633,7 @@ std::error_code PipelineManager::disableOptionalPipelineBranch(const std::string
     }
     else {
         LOG_WARN("Branch {} is already disabled", branch_name);
+        LOG_WARN("optional {}, linked {}, equal_branch? {}",first_element.is_optional, first_element.is_linked, first_element.branch == branch_name);
     }
     return {};
 }
@@ -650,6 +652,7 @@ std::vector<std::string> PipelineManager::getOptionalPipelineBranchesNames() con
     std::vector<std::string> branches_names;
     std::unordered_set<std::string> unique_branches;
     for (const auto& element: pipeline_elements_) {
+        // FIXME: Adding branches names to the list even if they are not optional becuase one of the elements in the branch is optional
         if (element.is_optional && unique_branches.insert(element.branch).second) {
             branches_names.push_back(element.branch);
         }

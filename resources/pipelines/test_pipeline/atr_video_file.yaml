@@ -16,9 +16,5 @@ pipeline:
         - name: nvinfer
           properties:
             config-file-path: /home/fronti/Downloads/Primary_Detector/config.yml
-        - name: nvvideoconvert
         - name: nvdsosd
-        - name: nvv4l2h264enc
-        - name: rtspclientsink
-          properties:
-            location: rtsp://localhost:8554/stream1
+        - name: nv3dsink
