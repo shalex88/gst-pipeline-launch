@@ -416,27 +416,31 @@ void PipelineManager::onBranchConnection(const GstElement* tee_element) {
     LOG_TRACE("On branch connection, tee element: {}", gst_element_get_name(tee_element));
     const auto tee = findPipelineElementByGstElement(tee_element);
     if (tee) {
+        std::error_code ec;
         for (auto& element: pipeline_elements_) {
-            if (element.is_optional && element.is_initialized && !element.is_linked) {
-                if (auto ec = linkGstElement(element)) {
+            if (element.branch == tee->type && element.is_optional && element.is_initialized && !element.is_linked) {
+                if (ec = linkGstElement(element)) {
                     LOG_ERROR("Failed to link {} to {}", tee->toString(), element.toString());
-                } else {
-                    LOG_DEBUG("Linked {} to {}", tee->toString(), element.toString());
+                    break;
                 }
             }
         }
-    }
-    else {
+        if(ec) {
+            LOG_ERROR("Failed to connect branch {}", tee->type);
+            // FIXME: reset all elements in the branch
+        } else {
+            LOG_DEBUG("Branch {} is connected", tee->type);
+        }
+    } else {
         LOG_ERROR("Failed to get tee element for element: {}", gst_element_get_name(tee_element));
     }
-    LOG_DEBUG("Branch {} is connected", tee->type);
 }
 
 void PipelineManager::onBranchDisconnection(const GstElement* gst_element) {
     LOG_TRACE("On branch disconnection, first element: {}", gst_element_get_name(gst_element));
     auto pipeline_element = findPipelineElementByGstElement(gst_element);
     if (!pipeline_element) {
-        LOG_ERROR("Failed to get pipeline element for element: {}", gst_element_get_name(gst_element));
+        LOG_ERROR("Failed to get pipeline element for gst element: {}", gst_element_get_name(gst_element));
         return;
     }
     for (auto element = pipeline_element; element->branch == pipeline_element->branch; element++) {
