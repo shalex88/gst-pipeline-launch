@@ -30,9 +30,9 @@ std::error_code PipelineManager::linkElements(PipelineElement& source, PipelineE
     if(!sink_pad){
         return {errno, std::generic_category()};
     }
-    
-    if (gst_pad_link(src_pad, sink_pad) != GST_PAD_LINK_OK) {
-        LOG_ERROR("Failed to link element {} to element {}", source.name, destination.name);
+    GstPadLinkReturn link_ret = gst_pad_link(src_pad, sink_pad);
+    if (link_ret != GST_PAD_LINK_OK) {
+        LOG_ERROR("Failed to link element {} to element {}, error code: {}", source.name, destination.name, static_cast<int>(link_ret));
         gst_object_unref(src_pad);
         gst_object_unref(sink_pad);
         return {errno, std::generic_category()};
@@ -775,6 +775,9 @@ std::string PipelineManager::generateDynamicPadName(const GstPadTemplate* pad_te
     LOG_DEBUG("Generating dynamic pad name from template: {}", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
     std::string generatedPadName = GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template);
     if (generatedPadName.find('%') != std::string::npos) {
+        // FIXME: pad_counter is global across all elements, instead of per-element.
+        // pad_counter should be scoped per element and pad template, like in gst-launch-1.0.
+        // (e.g: t1.src_0, t1.src_1, t2.src_2, t3.src_3 instead of t1.src_0, t1.src_1,t2.src_0, t2.src_1)
         static unsigned int pad_counter = 0;  // Unique counter for naming
         generatedPadName.replace(generatedPadName.find('%'), 2, std::to_string(pad_counter++));
     }

@@ -25,7 +25,7 @@ pipeline:
             batched-push-timeout: 40000
         - name: nvinfer
           properties:
-            config-file-path: /home/fronti/Downloads/Primary_Detector/config.yml
+            config-file-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/infer_config.yml
         - name: nvdsosd
         - name: nvvideoconvert
         - name: fpsdisplaysink

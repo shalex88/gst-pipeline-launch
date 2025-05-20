@@ -27,3 +27,4 @@ sudo apt -y install pkg-config bison flex nasm
 - gst_object_unref errors when disabling branches
 - Tee with more than one branch is unsupported
 - Inconsistent representation of multiple GstElement references in PipelineElement (e.g., tee vs. mux)
+- Dynamic pads get unique id's accross all elements, insted of per-element

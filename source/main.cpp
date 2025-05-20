@@ -70,7 +70,7 @@ void configure_logger(const bool verbose) {
     if (verbose) {
         SET_LOG_LEVEL(LoggerInterface::LogLevel::Debug);
         // gst_debug_set_default_threshold(GST_LEVEL_INFO);
-        gst_debug_set_threshold_from_string("nvmsgconv:5", TRUE);
+        // gst_debug_set_threshold_from_string("nvmsgconv:5,GST_CAPS:4", TRUE);
     } else {
         SET_LOG_LEVEL(LoggerInterface::LogLevel::Info);
     }

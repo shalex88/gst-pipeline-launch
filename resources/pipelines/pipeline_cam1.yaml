@@ -21,7 +21,7 @@ pipeline:
           properties:
             valignment: top
             halignment: right
-        - name: nvvidconv
+        - name: nvvideoconvert
         - name: nvv4l2h264enc
         - name: h264parse
         - name: rtspclientsink

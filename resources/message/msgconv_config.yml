@@ -13,8 +13,12 @@
 # The following data schema will be added to the objects detected by nvinfer for data output purposes
 # The parser suitable to this schema should be implemented and injected to nvmsgconv element by msg2p-lib property
 # Parser lib example implementation: /opt/nvidia/deepstream/deepstream-7.0/sources/libs/nvmsgconv
+#
+# The parser is looking for sensor, place and analytics fields in the config file. 
+# Each field in the config file is followed by a sensor ID.
+# The sensor ID is determined by the tee src pad's ID (src_%u).
 
-sensor0:
+sensor1:
   enable: 1
   type: Camera
   id: Sony
@@ -22,7 +26,7 @@ sensor0:
   description: "Frontier"
   coordinate: 5.2;10.1;11.2
 
-place0:
+place1:
   enable: 1
   id: 1
   type: place_field
@@ -33,7 +37,7 @@ place0:
   place-sub-field2: sderot #name
   place-sub-field3: elsec #level
 
-analytics0:
+analytics1:
   enable: 1
   id: XYZ
   description: "Frontier Analytics"

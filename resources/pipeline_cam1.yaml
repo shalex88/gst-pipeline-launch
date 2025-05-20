@@ -1,5 +1,3 @@
-#dynamic-agg-pipeline.yaml
-# Cannot identify device '/dev/video0'
 pipeline:
   branches:
     - name: main
@@ -20,6 +18,7 @@ pipeline:
           properties:
             location: rtsp://localhost:8554/stream1
 
+# FIXME: failed to dynamic link tee to the first element when the source is live GST_PAD_LINK_NOFORMAT
     - name: atr_tee
       optional: true
       elements:
@@ -32,11 +31,26 @@ pipeline:
         - name: nvinfer
           properties:
             config-file-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/infer_config.yml
+        - name: nvmsgconv
+          properties:
+            comp-id: 0
+            config: /home/fronti/project/video/gst-pipeline-launch/resources/message/msgconv_config.yml
+            debug-payload-dir: /home/fronti/project/video/gst-pipeline-launch/log/app
+            dummy-payload: false
+            frame-interval: 1
+            msg2p-lib: /opt/nvidia/deepstream/deepstream/lib/libnvds_msgconv.so
+            # msg2p-lib: /opt/nvidia/deepstream/deepstream/sources/libs/nvmsgconv/libnvds_msgconv.so
+            msg2p-newapi: true
+            multiple-payloads: false
+            payload-type: 0
+            qos: false
         - name: nvvideoconvert 
           properties:
             disable-passthrough: true
         - name: nvdsosd
+          # optional: true
         - name: nvv4l2h264enc
+        - name: h264parse
         - name: rtspclientsink
           properties:
             location: rtsp://localhost:8554/stream2
