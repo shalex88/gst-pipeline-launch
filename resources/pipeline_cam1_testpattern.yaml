@@ -4,16 +4,10 @@ pipeline:
       elements:
         - name: videotestsrc
           properties:
-            pattern: ball
+            pattern: smpte
         - name: capsfilter
           properties:
             caps: video/x-raw,format=UYVY,width=1920,height=1080,framerate=30/1
-        - name: preprocessing
-          optional: true
-        - name: tee
-          type: atr_tee
-        - name: postprocessing
-          optional: true
         - name: textoverlay
           properties:
             text: CAM1
@@ -29,19 +23,3 @@ pipeline:
         - name: rtspclientsink
           properties:
             location: rtsp://localhost:8554/stream1
-
-    - name: atr_tee
-      optional: true
-      elements:
-        - name: queue
-        - name: nvvidconv
-        - name: nvstreammux
-          properties:
-            batch-size: 1
-            width: 1920
-            height: 1080
-            batched-push-timeout: 40000
-        - name: nvinfer
-          properties:
-            config-file-path: /home/fronti/Downloads/Primary_Detector/config.yml
-        - name: fakesink

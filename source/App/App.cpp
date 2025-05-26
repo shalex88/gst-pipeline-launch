@@ -86,7 +86,7 @@ int App::run(const AppConfig& config) {
     tcp_server->init();
 
     if (auto ec = pipeline_manager->play()) { // Blocking call
-        LOG_ERROR("Failed to play pipeline");
+        LOG_ERROR("Failed to play pipeline {}", ec.message());
         return EXIT_FAILURE;
     }
 

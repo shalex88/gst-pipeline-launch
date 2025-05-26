@@ -4,7 +4,7 @@ pipeline:
       elements:
         - name: v4l2src
           properties:
-            device: /dev/video0
+            device: /dev/video1
         - name: capsfilter
           properties:
             caps: video/x-raw,format=UYVY,width=1920,height=1080,framerate=30/1
@@ -12,7 +12,7 @@ pipeline:
           optional: true
         - name: textoverlay
           properties:
-            text: CAM1
+            text: CAM2
             valignment: top
             halignment: left
         - name: timeoverlay
@@ -53,4 +53,4 @@ pipeline:
         - name: h264parse
         - name: rtspclientsink
           properties:
-            location: rtsp://localhost:8554/stream1
+            location: rtsp://localhost:8554/stream2

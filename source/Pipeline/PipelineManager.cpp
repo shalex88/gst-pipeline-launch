@@ -25,12 +25,12 @@ std::error_code PipelineManager::linkElements(PipelineElement& source, PipelineE
     if(!src_pad){
         return {errno, std::generic_category()};
     }
-    
+
     auto sink_pad = allocatePad(destination, GST_PAD_SINK);
     if(!sink_pad){
         return {errno, std::generic_category()};
     }
-    GstPadLinkReturn link_ret = gst_pad_link(src_pad, sink_pad);
+    const auto link_ret = gst_pad_link(src_pad, sink_pad);
     if (link_ret != GST_PAD_LINK_OK) {
         LOG_ERROR("Failed to link element {} to element {}, error code: {}", source.name, destination.name, static_cast<int>(link_ret));
         gst_object_unref(src_pad);
@@ -50,10 +50,12 @@ PipelineManager::~PipelineManager() {
 }
 
 std::error_code PipelineManager::enableAllOptionalPipelineBranches() {
+    // TODO: Implement
     return {};
 }
 
 std::error_code PipelineManager::disableAllOptionalPipelineBranches() {
+    // TODO: Implement
     return {};
 }
 
@@ -87,7 +89,7 @@ std::error_code PipelineManager::linkGstElement(PipelineElement& current_element
         LOG_TRACE("Link first or middle element");
         if (auto ec = linkElements(current_element, *next_element)) {
             LOG_ERROR("Failed to link {} to {}", current_element.toString(), next_element->toString());
-            return {errno, std::generic_category()};
+            return ec;
         } else {
             LOG_DEBUG("Linked {} to {}", current_element.toString(), next_element->toString());
         }
@@ -106,6 +108,7 @@ std::error_code PipelineManager::linkGstElement(PipelineElement& current_element
                       next_element->toString());
             return {errno, std::generic_category()};
         }
+
         if (!gst_element_sync_state_with_parent(current_element.gst_element)) {
             LOG_ERROR("Failed to sync {} state with parent", current_element.toString());
         }
@@ -116,7 +119,7 @@ std::error_code PipelineManager::linkGstElement(PipelineElement& current_element
         auto tee = findTeeElementForBranch(current_element.branch);
         if (auto ec = linkElements(tee, current_element)) {
             LOG_ERROR("Failed to link {} to {}", tee.toString(), current_element.toString());
-            return {errno, std::generic_category()};
+            return ec;
         } else {
             LOG_DEBUG("Linked {} to {}", tee.toString(), current_element.toString());
         }
@@ -134,8 +137,7 @@ std::string PipelineManager::generateGstElementUniqueName(const PipelineElement&
     auto unique_name_it = element.properties.find("name");
     if (unique_name_it != element.properties.end()) {
         unique_name = unique_name_it->second;
-    }
-    else {
+    } else {
         unique_name = element.name + std::to_string(element.id);
     }
     return {unique_name};
@@ -147,8 +149,7 @@ void PipelineManager::validateGstElementProperties(PipelineElement& element) con
             if(!g_object_class_find_property(G_OBJECT_GET_CLASS(element.gst_element), key.c_str())) {
                 element.properties.erase(property_it++);
                 LOG_WARN("Property {} not found for gst element {}. Earsing property from element", key, element.name.c_str());
-            }
-            else {
+            } else {
                 ++property_it;
             }
         }
@@ -166,19 +167,20 @@ std::error_code PipelineManager::retrieveMuxGstElement(PipelineElement& element,
     if (!element.gst_element) {
         LOG_ERROR("Failed to retrieve mux element {}", element.toString());
         return {errno, std::generic_category()};
-    } 
-        LOG_DEBUG("Mux element retrieved from pipeline: {}", element.toString());
-        return {};
+    }
+
+    LOG_DEBUG("Mux element retrieved from pipeline: {}", element.toString());
+    return {};
 }
 
 bool PipelineManager::isGstElementInPipeline(const std::string& element_name) const {
-    auto element = gst_bin_get_by_name(GST_BIN(gst_pipeline_.get()), element_name.c_str());
+    const auto element = gst_bin_get_by_name(GST_BIN(gst_pipeline_.get()), element_name.c_str());
     return {element != nullptr};
 }
 
 std::error_code PipelineManager::createGstElement(PipelineElement& element) const {
     auto unique_gst_element_name = generateGstElementUniqueName(element);
-    
+
     if(!isGstElementInPipeline(unique_gst_element_name)) {
         element.gst_element = gst_element_factory_make(element.name.c_str(), unique_gst_element_name.c_str());
         if (!element.gst_element) {
@@ -199,14 +201,12 @@ std::error_code PipelineManager::createGstElement(PipelineElement& element) cons
         }
 
         gst_element_sync_state_with_parent(element.gst_element);
-        
+
         LOG_DEBUG("Created element: {} with name: {}", element.toString(), unique_gst_element_name);
-    }
-    else {
+    } else {
         if (element.type == "mux") {
             retrieveMuxGstElement(element, unique_gst_element_name);
-        }
-        else {
+        } else {
             LOG_ERROR("Element {} already exists in pipeline", element.toString());
             return {errno, std::generic_category()};
         }
@@ -221,7 +221,7 @@ std::error_code PipelineManager::createGstPipeline(std::vector<PipelineElement>&
     for (auto& element: pipeline) {
         if (!element.is_optional) {
             if (auto ec = createGstElement(element)) {
-                return {errno, std::generic_category()};
+                return ec;
             }
         }
     }
@@ -229,7 +229,7 @@ std::error_code PipelineManager::createGstPipeline(std::vector<PipelineElement>&
     for (auto& element: pipeline) {
         if (element.is_initialized) {
             if (auto ec = linkGstElement(element)) {
-                return {errno, std::generic_category()};
+                return ec;
             }
         }
     }
@@ -239,21 +239,22 @@ std::error_code PipelineManager::createGstPipeline(std::vector<PipelineElement>&
 
 std::error_code PipelineManager::play() {
     if (auto ec = createGstPipeline(pipeline_elements_)) {
-        throw std::runtime_error("Failed to create pipeline");
+        LOG_ERROR("Failed to create pipeline: {}", ec.message());
+        return ec;
     }
 
     LOG_DEBUG("Start playing");
     gst_element_set_state(gst_pipeline_.get(), GST_STATE_PLAYING);
 
     const auto bus = std::shared_ptr<GstBus>(gst_element_get_bus(gst_pipeline_.get()), gst_object_unref);
-    gst_bus_add_watch(bus.get(), busCallback, this);
+    gst_bus_add_watch(bus.get(), handlePupelineBusSignal, this);
 
     gst_loop_ = std::shared_ptr<GMainLoop>(g_main_loop_new(nullptr, FALSE), g_main_loop_unref);
     if (!gst_loop_) {
         LOG_ERROR("Failed to create gstreamer main loop");
         return {errno, std::generic_category()};
     }
-    
+
     // GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(gst_pipeline_.get()), GST_DEBUG_GRAPH_SHOW_ALL, "custom_pipeline");
     g_main_loop_run(gst_loop_.get());
 
@@ -272,7 +273,7 @@ std::error_code PipelineManager::stop() const {
     return {errno, std::generic_category()};
 }
 
-gboolean PipelineManager::busCallback(GstBus*, GstMessage* message, gpointer data) {
+gboolean PipelineManager::handlePupelineBusSignal(GstBus*, GstMessage* message, gpointer data) {
     const auto pipeline_manager = static_cast<PipelineManager*>(data);
     switch (GST_MESSAGE_TYPE(message)) {
         case GST_MESSAGE_EOS:
@@ -314,11 +315,11 @@ std::error_code PipelineManager::enableOptionalElement(PipelineElement& element)
     std::lock_guard lock_guard(mutex_);
 
     if (auto ec = createGstElement(element)) {
-        return {errno, std::generic_category()};
+        return ec;
     }
 
     if (auto ec = linkGstElement(element)) {
-        return {errno, std::generic_category()};
+        return ec;
     }
 
     return {};
@@ -370,7 +371,7 @@ GstPadProbeReturn PipelineManager::disconnectGstElementProbeCallback(GstPad* src
     return GST_PAD_PROBE_REMOVE;
 }
 
-GstPadProbeReturn PipelineManager::disconnectBranchProbeCallback(GstPad* tee_src_pad, GstPadProbeInfo* info, gpointer data) {
+GstPadProbeReturn PipelineManager::handleBranchDisconnectionCallback(GstPad* tee_src_pad, GstPadProbeInfo* info, gpointer data) {
     const auto pipeline_manager = static_cast<PipelineManager*>(data);
 
     // Get the peer pad to determine the first element of the branch
@@ -399,21 +400,20 @@ GstPadProbeReturn PipelineManager::disconnectBranchProbeCallback(GstPad* tee_src
         return GST_PAD_PROBE_REMOVE;
     }
 
-    pipeline_manager->onBranchDisconnection(first_element);
+    pipeline_manager->disconnectBranch(first_element);
     gst_object_unref(first_element);
-    
+
     return GST_PAD_PROBE_REMOVE;
 }
 
-GstPadProbeReturn PipelineManager::connectBranchProbeCallback(GstPad* tee_sink_pad, GstPadProbeInfo* info, gpointer data) {
+GstPadProbeReturn PipelineManager::handleBranchConnectionCallback(GstPad* tee_sink_pad, GstPadProbeInfo* info, gpointer data) {
     const auto pipeline_manager = static_cast<PipelineManager*>(data);
-    pipeline_manager->onBranchConnection(GST_PAD_PARENT(tee_sink_pad));
+    pipeline_manager->connectBranch(GST_PAD_PARENT(tee_sink_pad));
 
     return GST_PAD_PROBE_REMOVE;
 }
 
-void PipelineManager::onBranchConnection(const GstElement* tee_element) {
-    LOG_TRACE("On branch connection, tee element: {}", gst_element_get_name(tee_element));
+void PipelineManager::connectBranch(const GstElement* tee_element) {
     const auto tee = findPipelineElementByGstElement(tee_element);
     if (tee) {
         std::error_code ec;
@@ -427,7 +427,7 @@ void PipelineManager::onBranchConnection(const GstElement* tee_element) {
         }
         if(ec) {
             LOG_ERROR("Failed to connect branch {}", tee->type);
-            // FIXME: reset all elements in the branch
+            // FIXME: not reseting the elements in the branch that was created and linked
         } else {
             LOG_DEBUG("Branch {} is connected", tee->type);
         }
@@ -436,8 +436,7 @@ void PipelineManager::onBranchConnection(const GstElement* tee_element) {
     }
 }
 
-void PipelineManager::onBranchDisconnection(const GstElement* gst_element) {
-    LOG_TRACE("On branch disconnection, first element: {}", gst_element_get_name(gst_element));
+void PipelineManager::disconnectBranch(const GstElement* gst_element) {
     auto pipeline_element = findPipelineElementByGstElement(gst_element);
     if (!pipeline_element) {
         LOG_ERROR("Failed to get pipeline element for gst element: {}", gst_element_get_name(gst_element));
@@ -447,8 +446,7 @@ void PipelineManager::onBranchDisconnection(const GstElement* gst_element) {
         LOG_DEBUG("Disconnecting element: {}", element->toString());
         if(element->type == "mux") {
             disconnectMuxElement(*element);
-        }
-        else {
+        } else {
             LOG_DEBUG("removing element: {}", element->toString());
             gst_element_set_state(element->gst_element, GST_STATE_NULL);
             gst_bin_remove(GST_BIN(gst_pipeline_.get()), element->gst_element);
@@ -456,6 +454,7 @@ void PipelineManager::onBranchDisconnection(const GstElement* gst_element) {
 
         resetPipelineElement(*element);
     }
+
     LOG_DEBUG("Branch {} is disconnected", pipeline_element->branch);
 }
 
@@ -468,13 +467,11 @@ void PipelineManager::disconnectMuxElement(PipelineElement& element) const {
         if (sink_pad_tmpl && GST_PAD_TEMPLATE_PRESENCE(sink_pad_tmpl) == GST_PAD_REQUEST) {
             LOG_DEBUG("Releasing request pad: {} for element {}", element.sink_pad_name, element.toString());
             gst_element_release_request_pad(element.gst_element, sink_pad);
-        }
-        else {
+        } else {
             LOG_TRACE("Sink pad {} is not a request pad", element.sink_pad_name);
         }
         gst_object_unref(sink_pad);
-    }
-    else {
+    } else {
         LOG_ERROR("Failed to get sink pad {} for element {}", element.sink_pad_name, element.toString());
     }
 
@@ -482,8 +479,7 @@ void PipelineManager::disconnectMuxElement(PipelineElement& element) const {
     if (sink_pads.size() == 0) { // multiple linked pads
         LOG_DEBUG("Element {} has no linked pads, removing element from pipeline", element.toString());
         gst_bin_remove(GST_BIN(gst_pipeline_.get()), element.gst_element);
-    }
-    else {
+    } else {
         LOG_DEBUG("Element {} has linked pads, not removing from pipeline", element.toString());
     }
 }
@@ -497,12 +493,12 @@ void PipelineManager::resetPipelineElement(PipelineElement& element) const {
 std::vector<GstPad*> PipelineManager::getLinkedSinkPads(GstElement* element) const {
     LOG_TRACE("Getting linked sink pads for element: {}", gst_element_get_name(element));
     std::vector<GstPad*> sink_pads;
-    GstIterator* it = gst_element_iterate_sink_pads(element);
+    auto it = gst_element_iterate_sink_pads(element);
 
     if (it) {
         GValue item = G_VALUE_INIT;
         while (gst_iterator_next(it, &item) == GST_ITERATOR_OK) {
-            GstPad* pad = static_cast<GstPad*>(g_value_get_object(&item));
+            auto pad = static_cast<GstPad*>(g_value_get_object(&item));
             if (pad && gst_pad_is_linked(pad)) {
                 sink_pads.push_back(pad);
             }
@@ -519,18 +515,17 @@ std::error_code PipelineManager::disableOptionalElement(PipelineElement& element
     LOG_DEBUG("Disabling element: {}", element.toString());
 
     auto sink_pads = getLinkedSinkPads(element.gst_element);
-    
+
     if (sink_pads.size() == 0) {
         LOG_ERROR("Failed to get sink pad for element {}", element.toString());
         return {errno, std::generic_category()};
-    }
-    else if (sink_pads.size() > 1) {
+    } else if (sink_pads.size() > 1) {
         LOG_ERROR("Element {} has multiple sink pads ({}). This might have unexpected behaivior.", element.toString(), sink_pads.size());
         return std::make_error_code(std::errc::invalid_argument);
     }
 
-    GstPad* sink_pad = sink_pads.front();
-    GstPad* peer_pad = gst_pad_get_peer(sink_pad);
+    auto sink_pad = sink_pads.front();
+    auto peer_pad = gst_pad_get_peer(sink_pad);
 
     if (!peer_pad) {
         LOG_ERROR("Failed to get src peer for element {}", element.toString());
@@ -538,7 +533,7 @@ std::error_code PipelineManager::disableOptionalElement(PipelineElement& element
     }
 
     // Add probe to disconnect element safely when idle
-    gst_pad_add_probe(peer_pad, GST_PAD_PROBE_TYPE_IDLE, disconnectGstElementProbeCallback, 
+    gst_pad_add_probe(peer_pad, GST_PAD_PROBE_TYPE_IDLE, disconnectGstElementProbeCallback,
                         const_cast<PipelineManager*>(this), nullptr);
 
     gst_object_unref(peer_pad);
@@ -553,7 +548,7 @@ std::error_code PipelineManager::enableAllOptionalPipelineElements() {
     for (auto& element: pipeline_elements_) {
         if (element.is_optional && !element.is_initialized && !element.is_linked) {
             if (auto ec = createGstElement(element)) {
-                return {errno, std::generic_category()};
+                return ec;
             }
         }
     }
@@ -561,7 +556,7 @@ std::error_code PipelineManager::enableAllOptionalPipelineElements() {
     for (auto& element: pipeline_elements_) {
         if (element.is_optional && element.is_initialized && !element.is_linked) {
             if (auto ec = linkGstElement(element)) {
-                return {errno, std::generic_category()};
+                return ec;
             }
         }
     }
@@ -610,7 +605,7 @@ std::error_code PipelineManager::enableOptionalPipelineBranch(const std::string&
     for (auto& element: pipeline_elements_) {
         if (element.is_optional && !element.is_initialized && !element.is_linked && element.branch == branch_name) {
             if (auto ec = createGstElement(element)) {
-                return {errno, std::generic_category()};
+                return ec;
             }
         }
     }
@@ -621,7 +616,7 @@ std::error_code PipelineManager::enableOptionalPipelineBranch(const std::string&
         return {errno, std::generic_category()};
     }
 
-    gst_pad_add_probe(tee_sink_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, connectBranchProbeCallback, this, nullptr);
+    gst_pad_add_probe(tee_sink_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, handleBranchConnectionCallback, this, nullptr);
 
     return {};
 }
@@ -630,15 +625,14 @@ std::error_code PipelineManager::disableOptionalPipelineBranch(const std::string
     LOG_TRACE("Disabling branch: {}", branch_name);
     auto tee = findTeeElementForBranch(branch_name);
     auto first_element = findFirstElementInBranch(branch_name);
-    if (first_element.is_optional && first_element.is_linked && first_element.branch == branch_name)
-    {
+    if (first_element.is_optional && first_element.is_linked && first_element.branch == branch_name) {
         auto tee_src_pad = findLinkedSrcPad(tee.gst_element, first_element.gst_element);
-        gst_pad_add_probe(tee_src_pad, GST_PAD_PROBE_TYPE_IDLE, disconnectBranchProbeCallback, this, nullptr);
-    }
-    else {
+        gst_pad_add_probe(tee_src_pad, GST_PAD_PROBE_TYPE_IDLE, handleBranchDisconnectionCallback, this, nullptr);
+    } else {
         LOG_WARN("Branch {} is already disabled", branch_name);
         LOG_WARN("optional {}, linked {}, equal_branch? {}",first_element.is_optional, first_element.is_linked, first_element.branch == branch_name);
     }
+
     return {};
 }
 
@@ -702,17 +696,17 @@ PipelineElement& PipelineManager::findFirstElementInBranch(const std::string& br
 GstPad* PipelineManager::findLinkedSrcPad(GstElement* upstream_element, GstElement* downstream_element) {
     GstPad* source_pad = nullptr;
     LOG_TRACE("Finding linked source pad for downstream element: {}", gst_element_get_name(downstream_element));
-    GstIterator* it = gst_element_iterate_sink_pads(downstream_element);
+    auto it = gst_element_iterate_sink_pads(downstream_element);
     GValue item = G_VALUE_INIT;
 
     while (gst_iterator_next(it, &item) == GST_ITERATOR_OK) {
-        GstPad* sink_pad = static_cast<GstPad*>(g_value_get_object(&item));
-        
+        auto sink_pad = static_cast<GstPad*>(g_value_get_object(&item));
+
         // Get the peer pad of the sink pad
-        GstPad* peer_pad = gst_pad_get_peer(sink_pad);
+        auto peer_pad = gst_pad_get_peer(sink_pad);
         if (peer_pad) {
-            GstElement* parent_element = gst_pad_get_parent_element(peer_pad);
-            
+            auto parent_element = gst_pad_get_parent_element(peer_pad);
+
             // Check if the peer pad belongs to the upstream element
             if (parent_element == upstream_element) {
                 source_pad = peer_pad;  // Found the source pad
@@ -720,26 +714,24 @@ GstPad* PipelineManager::findLinkedSrcPad(GstElement* upstream_element, GstEleme
                 gst_object_unref(parent_element);
                 break;
             }
-            
+
             gst_object_unref(parent_element);
             gst_object_unref(peer_pad);
         }
         g_value_unset(&item);
     }
-    
+
     gst_iterator_free(it);
     return source_pad;
 }
 
 GstPad* PipelineManager::findGstPadByName(GstElement* element, const std::string &pad_name)
 {
-    GstIterator *it = gst_element_iterate_pads(element);
+    auto it = gst_element_iterate_pads(element);
     GValue item = G_VALUE_INIT;
-    while (gst_iterator_next(it, &item) == GST_ITERATOR_OK)
-    {
-        GstPad *pad = static_cast<GstPad *>(g_value_get_object(&item));
-        if (pad && pad_name == gst_pad_get_name(pad))
-        {
+    while (gst_iterator_next(it, &item) == GST_ITERATOR_OK) {
+        auto pad = static_cast<GstPad *>(g_value_get_object(&item));
+        if (pad && pad_name == gst_pad_get_name(pad)) {
             gst_iterator_free(it);
             return pad;
         }
@@ -749,9 +741,10 @@ GstPad* PipelineManager::findGstPadByName(GstElement* element, const std::string
     return nullptr;
 }
 
-GstPad* PipelineManager::requestExplicitPadName(PipelineElement& element, GstPadDirection direction) {
+GstPad* PipelineManager::requestPadByExplicitName(PipelineElement& element, GstPadDirection direction) {
     GstPad *pad = nullptr;
-    std::string padName = (direction == GST_PAD_SINK) ? element.sink_pad_name : ""; /*element.src_pad_name;*/
+    //TODO: Support src pad name as well
+    std::string padName = (direction == GST_PAD_SINK) ? element.sink_pad_name : "";
 
     if (!padName.empty()) {
         LOG_DEBUG("Requesting explicit pad name: {} for element {}",padName, element.toString());
@@ -784,36 +777,40 @@ std::string PipelineManager::generateDynamicPadName(const GstPadTemplate* pad_te
     return generatedPadName;
 }
 
-GstPad* PipelineManager::allocatePad(PipelineElement& element, GstPadDirection direction) {
-    GstPad *pad = requestExplicitPadName(element, direction);
-    
-    if(!pad)
-    {
-        auto pad_template = findSuitablePadTemplate(element, direction);
-        
-        if (pad_template) {
-            switch (GST_PAD_TEMPLATE_PRESENCE(pad_template))
-            {
+GstPad* PipelineManager::requestPad(PipelineElement& element, GstPadDirection direction) {
+    GstPad* pad {};
+
+    auto pad_template = findSuitablePadTemplate(element, direction);
+    std::string generatedPadName {};
+
+    if (pad_template) {
+        switch (GST_PAD_TEMPLATE_PRESENCE(pad_template)) {
             case GST_PAD_ALWAYS:
                 LOG_DEBUG("Found a static pad template {} for element {}", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template), element.toString());
                 pad = gst_element_get_static_pad(element.gst_element, GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
                 break;
             case GST_PAD_REQUEST:
-            {
                 LOG_DEBUG("Found a dynamic pad template {} for element {}", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template), element.toString());
-                auto generatedPadName = generateDynamicPadName(pad_template);
+                generatedPadName = generateDynamicPadName(pad_template);
                 LOG_DEBUG("Requesting pad: {} from template: {}", generatedPadName, GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
                 pad = gst_element_request_pad_simple(element.gst_element, generatedPadName.c_str());
-            }
                 break;
             default:
-                LOG_WARN("Pad template {} presence is not supported", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
+                LOG_ERROR("Pad template {} presence is not supported", GST_PAD_TEMPLATE_NAME_TEMPLATE(pad_template));
                 break;
-            }
         }
-        else {
-            LOG_ERROR("No compatible pad template found for direction: {}", (direction == GST_PAD_SINK ? "SINK" : "SRC"));
-        }
+    } else {
+        LOG_ERROR("No compatible pad template found for direction: {}", (direction == GST_PAD_SINK ? "SINK" : "SRC"));
+    }
+
+    return pad;
+}
+
+GstPad* PipelineManager::allocatePad(PipelineElement& element, GstPadDirection direction) {
+    auto pad = requestPadByExplicitName(element, direction);
+
+    if(!pad) {
+        pad = requestPad(element, direction);
     }
 
     return pad;

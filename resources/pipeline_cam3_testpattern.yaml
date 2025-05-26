@@ -4,17 +4,13 @@ pipeline:
       elements:
         - name: videotestsrc
           properties:
-            pattern: ball
+            pattern: smpte
         - name: capsfilter
           properties:
             caps: video/x-raw,format=UYVY,width=1920,height=1080,framerate=30/1
-        - name: preprocessing
-          optional: true
-        - name: postprocessing
-          optional: true
         - name: textoverlay
           properties:
-            text: CAM2
+            text: CAM3
             valignment: top
             halignment: left
         - name: timeoverlay
@@ -26,4 +22,4 @@ pipeline:
         - name: h264parse
         - name: rtspclientsink
           properties:
-            location: rtsp://localhost:8554/stream2
+            location: rtsp://localhost:8554/stream3
