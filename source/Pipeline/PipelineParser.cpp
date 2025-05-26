@@ -15,12 +15,13 @@ PipelineElement PipelineParser::deserializeElement(const YAML::detail::iterator_
     auto name = element["name"].as<std::string>();
     auto type = element["type"].IsDefined() ? element["type"].as<std::string>() : "unknown";
     auto properties = element["properties"].IsDefined() ? element["properties"].as<std::map<std::string, std::string>>() : std::map<std::string, std::string>();
+    auto sink_pad = element["sinkpad"].IsDefined() ? element["sinkpad"].as<std::string>() : "";
     auto is_optional = element["optional"].IsDefined() ? element["optional"].as<bool>() : false;
     if (branch_is_optional) {
         is_optional = true;
     }
 
-    return {id++, name, type, std::move(branch), properties, is_optional, false, nullptr};
+    return {id++, name, type, std::move(branch), properties, sink_pad, is_optional, nullptr};
 }
 
 std::vector<PipelineElement> PipelineParser::getAllElements() const {

@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v4
@@ -31,4 +31,4 @@ jobs:
       run: cmake --build build --config ${{env.BUILD_TYPE}}
 
     - name: Run
-      run: cd ./build && ./${{steps.repo-name.outputs.name}} -i ../resources/pipeline_test.yaml -v
+      run: cd ./build && ./${{steps.repo-name.outputs.name}} -i ../resources/pipeline.yaml -v

@@ -4,14 +4,10 @@ pipeline:
       elements:
         - name: videotestsrc
           properties:
-            pattern: ball
+            pattern: smpte
         - name: capsfilter
           properties:
             caps: video/x-raw,format=UYVY,width=1920,height=1080,framerate=30/1
-        - name: preprocessing
-          optional: true
-        - name: postprocessing
-          optional: true
         - name: textoverlay
           properties:
             text: CAM2
