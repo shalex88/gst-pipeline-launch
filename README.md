@@ -23,6 +23,7 @@ sudo apt -y install pkg-config bison flex nasm
 - Clean up elements that were already created and linked On branch-connection failure
 - Support explicit src pad name in Parser and PipelineElement
 - Refactor gst logging messages
+- Investigate why the CI run fails when running on Ubuntu 24.04 but does work locally
 
 ## Known issues
 
