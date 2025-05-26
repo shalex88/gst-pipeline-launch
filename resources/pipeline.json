@@ -1,0 +1,43 @@
+{
+  "pipeline": {
+    "elements": [
+      {
+        "name": "videotestsrc",
+        "type": "source",
+        "caps": "",
+        "optional": false,
+        "properties": {
+          "pattern": "smpte"
+        }
+      },
+      {
+        "name": "timeoverlay",
+        "type": "filter",
+        "caps": "",
+        "optional": false,
+        "properties": {}
+      },
+      {
+        "name": "metadatainjector",
+        "type": "filter",
+        "caps": "",
+        "optional": true,
+        "properties": {}
+      },
+      {
+        "name": "metadataextractor",
+        "type": "filter",
+        "caps": "",
+        "optional": true,
+        "properties": {}
+      },
+      {
+        "name": "autovideosink",
+        "type": "sink",
+        "caps": "",
+        "optional": false,
+        "properties": {}
+      }
+    ]
+  }
+}
