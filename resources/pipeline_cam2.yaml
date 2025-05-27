@@ -33,6 +33,8 @@ pipeline:
           properties:
             config-file-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/infer_config.yml
         - name: nvmsgconv
+          #FIXME: if enabled by default, but nvinfer is not enabled, it pipeline will fail
+          optional: true
           properties:
             comp-id: 0
             config: /home/fronti/project/video/gst-pipeline-launch/resources/message/msgconv_config.yml
