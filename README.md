@@ -36,3 +36,4 @@ sudo apt -y install pkg-config bison flex nasm
 - Failed to dynamic link tee to the first element when the source is live GST_PAD_LINK_NOFORMAT
 - When one of the elements in a branch is optional, the branch becomes optional even if it's not defined as optional. source: PipelineManager::getOptionalPipelineBranchesNames()
 - When a branch connection fails, any elements of the branch that have already been initialized and linked are not cleaned up.
+- nvmsgconv depends on nvinfer. If nvinfer is not enabled and nvmsgconv is, the pipeline will fail. Think about how to handle this. Maybe to allow enable/disable groups of elements
