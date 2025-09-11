@@ -427,12 +427,33 @@ void PipelineManager::connectBranch(const GstElement* tee_element) {
         }
         if(ec) {
             LOG_ERROR("Failed to connect branch {}", tee->type);
-            // FIXME: not reseting the elements in the branch that was created and linked
+            LOG_DEBUG("Cleaning up branch {}", tee->type);
+            auto& first_element_in_branch = findFirstElementInBranch(tee->type);
+            cleanupBranch(first_element_in_branch);
         } else {
             LOG_DEBUG("Branch {} is connected", tee->type);
         }
     } else {
         LOG_ERROR("Failed to get tee element for element: {}", gst_element_get_name(tee_element));
+    }
+}
+
+void PipelineManager::cleanupBranch(PipelineElement& first_element) {
+    for (auto element = &first_element; element->branch == first_element.branch; element++) {
+        if(element->gst_element) {
+            LOG_DEBUG("Disconnecting element: {}", element->toString());
+            if(element->type == "mux") {
+                disconnectMuxElement(*element);
+            } else {
+                LOG_ERROR("removing element: {}", element->toString());
+            gst_element_set_state(element->gst_element, GST_STATE_NULL);
+            gst_bin_remove(GST_BIN(gst_pipeline_.get()), element->gst_element);
+            }
+        } else {
+            LOG_DEBUG("Element {} has no GstElement", element->toString());
+        }
+
+        resetPipelineElement(*element);
     }
 }
 
@@ -442,19 +463,7 @@ void PipelineManager::disconnectBranch(const GstElement* gst_element) {
         LOG_ERROR("Failed to get pipeline element for gst element: {}", gst_element_get_name(gst_element));
         return;
     }
-    for (auto element = pipeline_element; element->branch == pipeline_element->branch; element++) {
-        LOG_DEBUG("Disconnecting element: {}", element->toString());
-        if(element->type == "mux") {
-            disconnectMuxElement(*element);
-        } else {
-            LOG_DEBUG("removing element: {}", element->toString());
-            gst_element_set_state(element->gst_element, GST_STATE_NULL);
-            gst_bin_remove(GST_BIN(gst_pipeline_.get()), element->gst_element);
-        }
-
-        resetPipelineElement(*element);
-    }
-
+    cleanupBranch(*pipeline_element);
     LOG_DEBUG("Branch {} is disconnected", pipeline_element->branch);
 }
 

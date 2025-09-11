@@ -46,6 +46,7 @@ private:
     static GstPadProbeReturn handleBranchDisconnectionCallback(GstPad* src_peer, GstPadProbeInfo* info, gpointer data);
     static GstPadProbeReturn handleBranchConnectionCallback(GstPad* tee_sink_pad, GstPadProbeInfo* info, gpointer data);
     void connectBranch(const GstElement* gst_element);
+    void cleanupBranch(PipelineElement& first_element);
     void disconnectBranch(const GstElement* gst_element);
     void disconnectMuxElement(PipelineElement& element) const;
     static GstPadTemplate* findSuitablePadTemplate(PipelineElement& element, GstPadDirection direction);
