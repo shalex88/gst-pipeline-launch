@@ -20,7 +20,6 @@ sudo apt -y install pkg-config bison flex nasm
 - Fix inconsistent representation of multiple GstElement references in PipelineElement (e.g., tee vs. mux)
 - Move the resources dir to the main project, it is not gst-pipeline-launcher related
 - MAIN PROJECT: Add nvmsgconv parser lib sources from /opt/nvidia/deepstream/deepstream-7.0/sources/libs/nvmsgconv to the project
-- Clean up elements that were already created and linked On branch-connection failure
 - Support explicit src pad name in Parser and PipelineElement
 - Refactor gst logging messages
 - Investigate why the CI run fails when running on Ubuntu 24.04 but does work locally
@@ -32,8 +31,6 @@ sudo apt -y install pkg-config bison flex nasm
 - Registering multiple branches/elements with the same name is unsupported, maybe we should support it?
 - Tee with more than one branch is unsupported, this behavior differs from gst-launch, maybe we should support it?
 - Running nvmsgconv element (msgconv_config.yml) behaves differently from gst-launch. source: PipelineManager::generateDynamicPadName() FIXME
-- Currently we send ack on enable_branch command even if connection fails. The cause is an async nature of the connection function.
-- Failed to dynamic link tee to the first element when the source is live GST_PAD_LINK_NOFORMAT
+- Currently we send ack on enable_branch command even if connection fails. The cause is an async nature of the connection function. Think about using GST_STATE_CHANGE_ASYNC
 - When one of the elements in a branch is optional, the branch becomes optional even if it's not defined as optional. source: PipelineManager::getOptionalPipelineBranchesNames()
-- When a branch connection fails, any elements of the branch that have already been initialized and linked are not cleaned up.
 - nvmsgconv depends on nvinfer. If nvinfer is not enabled and nvmsgconv is, the pipeline will fail. Think about how to handle this. Maybe to allow enable/disable groups of elements

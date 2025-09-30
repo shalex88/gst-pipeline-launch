@@ -130,7 +130,8 @@ std::error_code PipelineManager::linkGstElement(PipelineElement& current_element
     return {};
 }
 
-std::string PipelineManager::generateGstElementUniqueName(const PipelineElement& element) const {
+std::string PipelineManager::generateGstElementUniqueName(const PipelineElement& element)
+{
     LOG_DEBUG("Generating unique name for element: {}", element.toString());
     std::string unique_name;
 
@@ -162,7 +163,7 @@ void PipelineManager::setGstElementProperty(PipelineElement& element) const {
     }
 }
 
-std::error_code PipelineManager::retrieveMuxGstElement(PipelineElement& element, const std::string unique_element_name) const {
+std::error_code PipelineManager::retrieveMuxGstElement(PipelineElement& element, const std::string& unique_element_name) const {
     element.gst_element = gst_bin_get_by_name(GST_BIN(gst_pipeline_.get()), unique_element_name.c_str());
     if (!element.gst_element) {
         LOG_ERROR("Failed to retrieve mux element {}", element.toString());
@@ -175,7 +176,7 @@ std::error_code PipelineManager::retrieveMuxGstElement(PipelineElement& element,
 
 bool PipelineManager::isGstElementInPipeline(const std::string& element_name) const {
     const auto element = gst_bin_get_by_name(GST_BIN(gst_pipeline_.get()), element_name.c_str());
-    return {element != nullptr};
+    return element != nullptr;
 }
 
 std::error_code PipelineManager::createGstElement(PipelineElement& element) const {
@@ -419,7 +420,8 @@ void PipelineManager::connectBranch(const GstElement* tee_element) {
         std::error_code ec;
         for (auto& element: pipeline_elements_) {
             if (element.branch == tee->type && element.is_optional && element.is_initialized && !element.is_linked) {
-                if (ec = linkGstElement(element)) {
+                ec = linkGstElement(element);
+                if (ec) {
                     LOG_ERROR("Failed to link {} to {}", tee->toString(), element.toString());
                     break;
                 }
@@ -428,8 +430,8 @@ void PipelineManager::connectBranch(const GstElement* tee_element) {
         if(ec) {
             LOG_ERROR("Failed to connect branch {}", tee->type);
             LOG_DEBUG("Cleaning up branch {}", tee->type);
-            auto& first_element_in_branch = findFirstElementInBranch(tee->type);
-            cleanupBranch(first_element_in_branch);
+            auto first_element_in_branch = findFirstElementInBranch(tee->type);
+            cleanupBranch(&first_element_in_branch);
         } else {
             LOG_DEBUG("Branch {} is connected", tee->type);
         }
@@ -438,36 +440,35 @@ void PipelineManager::connectBranch(const GstElement* tee_element) {
     }
 }
 
-void PipelineManager::cleanupBranch(PipelineElement& first_element) {
-    for (auto element = &first_element; element->branch == first_element.branch; element++) {
+void PipelineManager::cleanupBranch(PipelineElement* first_element) const {
+    for (auto* element = first_element; element->branch == first_element->branch; element++) {
         if(element->gst_element) {
             LOG_DEBUG("Disconnecting element: {}", element->toString());
             if(element->type == "mux") {
                 disconnectMuxElement(*element);
             } else {
                 LOG_ERROR("removing element: {}", element->toString());
-            gst_element_set_state(element->gst_element, GST_STATE_NULL);
-            gst_bin_remove(GST_BIN(gst_pipeline_.get()), element->gst_element);
+                gst_element_set_state(element->gst_element, GST_STATE_NULL);
+                gst_bin_remove(GST_BIN(gst_pipeline_.get()), element->gst_element);
             }
         } else {
             LOG_DEBUG("Element {} has no GstElement", element->toString());
         }
-
-        resetPipelineElement(*element);
+        resetPipelineElement(element);
     }
 }
 
-void PipelineManager::disconnectBranch(const GstElement* gst_element) {
-    auto pipeline_element = findPipelineElementByGstElement(gst_element);
+void PipelineManager::disconnectBranch(GstElement* gst_element) {
+    auto* pipeline_element = findPipelineElementByGstElement(gst_element);
     if (!pipeline_element) {
         LOG_ERROR("Failed to get pipeline element for gst element: {}", gst_element_get_name(gst_element));
         return;
     }
-    cleanupBranch(*pipeline_element);
+    cleanupBranch(pipeline_element);
     LOG_DEBUG("Branch {} is disconnected", pipeline_element->branch);
 }
 
-void PipelineManager::disconnectMuxElement(PipelineElement& element) const {
+void PipelineManager::disconnectMuxElement(const PipelineElement& element) const {
     LOG_DEBUG("Disconnecting mux element: {}", element.toString());
     auto sink_pad = findGstPadByName(element.gst_element, element.sink_pad_name);
     if (sink_pad) {
@@ -493,13 +494,13 @@ void PipelineManager::disconnectMuxElement(PipelineElement& element) const {
     }
 }
 
-void PipelineManager::resetPipelineElement(PipelineElement& element) const {
-    element.is_initialized = false;
-    element.is_linked = false;
-    element.gst_element = nullptr;
+void PipelineManager::resetPipelineElement(PipelineElement* element) const {
+    element->is_initialized = false;
+    element->is_linked = false;
+    element->gst_element = nullptr;
 }
 
-std::vector<GstPad*> PipelineManager::getLinkedSinkPads(GstElement* element) const {
+std::vector<GstPad*> PipelineManager::getLinkedSinkPads(GstElement* element) {
     LOG_TRACE("Getting linked sink pads for element: {}", gst_element_get_name(element));
     std::vector<GstPad*> sink_pads;
     auto it = gst_element_iterate_sink_pads(element);
@@ -519,7 +520,7 @@ std::vector<GstPad*> PipelineManager::getLinkedSinkPads(GstElement* element) con
     return sink_pads;
 }
 
-std::error_code PipelineManager::disableOptionalElement(PipelineElement& element) const {
+std::error_code PipelineManager::disableOptionalElement(PipelineElement& element) {
     std::lock_guard lock_guard(mutex_);
     LOG_DEBUG("Disabling element: {}", element.toString());
 
@@ -702,7 +703,7 @@ PipelineElement& PipelineManager::findFirstElementInBranch(const std::string& br
     throw std::runtime_error("Branch not found");
 }
 
-GstPad* PipelineManager::findLinkedSrcPad(GstElement* upstream_element, GstElement* downstream_element) {
+GstPad* PipelineManager::findLinkedSrcPad(const GstElement* upstream_element, GstElement* downstream_element) {
     GstPad* source_pad = nullptr;
     LOG_TRACE("Finding linked source pad for downstream element: {}", gst_element_get_name(downstream_element));
     auto it = gst_element_iterate_sink_pads(downstream_element);
