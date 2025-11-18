@@ -25,10 +25,52 @@ fi
 
 source "$TOOLCHAIN_ENV"
 
+# Check if we should use Docker for building
+if [ "$USE_DOCKER_BUILD" = "1" ]; then
+    echo "Docker build mode detected"
+    echo "Building Docker image and running build inside container..."
+    
+    # Find the Dockerfile location
+    RUN_CONTAINER_SCRIPT="$DOCKER_TOOLCHAIN_DIR/run_container.sh"
+    if [ ! -f "$RUN_CONTAINER_SCRIPT" ]; then
+        echo "Error: run_container.sh not found at $RUN_CONTAINER_SCRIPT"
+        exit 1
+    fi
+    
+    # Get the project root (3 levels up from toolchain dir)
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+    
+    # Create a temporary script to run inside the container
+    TEMP_SCRIPT="/tmp/docker_build_${TOOLCHAIN_NAME}_$$.sh"
+    cat > "$TEMP_SCRIPT" << 'EOFSCRIPT'
+#!/bin/bash
+set -e
+cd /workspace/submodules/orin/video-service
+source /workspace/toolchains/aarch64-nvidia-linux-gcc/env.sh
+exec bash build.sh
+EOFSCRIPT
+    chmod +x "$TEMP_SCRIPT"
+    
+    # Run build inside Docker container
+    # Mount the entire project root so all submodules are accessible
+    "$RUN_CONTAINER_SCRIPT" \
+        --args "-v $PROJECT_ROOT:/workspace -v $TEMP_SCRIPT:/tmp/docker_build.sh -w /workspace/submodules/orin/video-service" \
+        --exec "/tmp/docker_build.sh"
+    
+    BUILD_EXIT=$?
+    rm -f "$TEMP_SCRIPT"
+    exit $BUILD_EXIT
+fi
+
 BUILD_DIR="build-$TOOLCHAIN_NAME"
 LOG_FILE="$BUILD_DIR/build.log"
 
 # Create build directory if it doesn't exist
+# Clean CMake cache if it exists to ensure fresh configuration
+if [ -d "$BUILD_DIR" ]; then
+    rm -f "$BUILD_DIR/CMakeCache.txt"
+    rm -rf "$BUILD_DIR/CMakeFiles"
+fi
 mkdir -p "$BUILD_DIR"
 
 {
@@ -37,12 +79,17 @@ mkdir -p "$BUILD_DIR"
     echo "Sourcing environment: $TOOLCHAIN_ENV"
     echo "Build directory: $BUILD_DIR"
 
-    # Use CMAKE_TOOLCHAIN_FILE from environment if set
+    # For cross-compilation with vcpkg, we need to use vcpkg's toolchain
+    # and chainload the cross-compilation toolchain via VCPKG_CHAINLOAD_TOOLCHAIN_FILE
     if [ -n "$CMAKE_TOOLCHAIN_FILE" ]; then
-        echo "Using toolchain file: $CMAKE_TOOLCHAIN_FILE"
-        cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE"
+        echo "Orin toolchain file: $CMAKE_TOOLCHAIN_FILE"
+        echo "vcpkg will chainload this toolchain"
+        cmake -S . -B "$BUILD_DIR" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE" \
+            -DVCPKG_TARGET_TRIPLET=arm64-linux
     else
-        echo "No CMAKE_TOOLCHAIN_FILE set, using environment variables only"
+        echo "No CMAKE_TOOLCHAIN_FILE set, using native build"
         cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
     fi
 

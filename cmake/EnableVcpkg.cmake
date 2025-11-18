@@ -13,4 +13,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(vcpkg)
 
-set(CMAKE_TOOLCHAIN_FILE "${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+# Set vcpkg as the main toolchain file
+# For cross-compilation, use VCPKG_CHAINLOAD_TOOLCHAIN_FILE to load the target toolchain
+set(CMAKE_TOOLCHAIN_FILE "${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file" FORCE)
