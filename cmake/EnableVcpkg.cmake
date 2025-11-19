@@ -13,7 +13,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(vcpkg)
 
-if (DEFINED VCPKG_CHAINLOAD_TOOLCHAIN_FILE)
+if(DEFINED VCPKG_CHAINLOAD_TOOLCHAIN_FILE)
     set(CMAKE_CROSSCOMPILING TRUE)
 endif()
 

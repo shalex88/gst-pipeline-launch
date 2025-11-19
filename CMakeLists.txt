@@ -27,21 +27,21 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
 find_package(cxxopts CONFIG REQUIRED)
 
-include_directories(
-        include
-        source
-)
-
 file(GLOB_RECURSE sourceFiles CONFIGURE_DEPENDS "source/*.cpp")
 
 add_executable(${PROJECT_NAME} ${sourceFiles})
 
+target_include_directories(${PROJECT_NAME} PRIVATE
+    include
+    source
+)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        spdlog::spdlog
-        yaml-cpp::yaml-cpp
-        cxxopts::cxxopts
-        PkgConfig::GSTREAMER
-        PkgConfig::GLIB
-        PkgConfig::GOBJECT
-        PkgConfig::GMODULE
+    spdlog::spdlog
+    yaml-cpp::yaml-cpp
+    cxxopts::cxxopts
+    PkgConfig::GSTREAMER
+    PkgConfig::GLIB
+    PkgConfig::GOBJECT
+    PkgConfig::GMODULE
 )

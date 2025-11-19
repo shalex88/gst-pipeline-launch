@@ -47,6 +47,11 @@ if [ "$USE_DOCKER_BUILD" = "1" ]; then
 set -e
 cd /workspace/submodules/orin/video-service
 source /workspace/toolchains/aarch64-nvidia-linux-gcc/env.sh
+# Ensure CMake and vcpkg can find packages for the target triplet
+export CMAKE_PREFIX_PATH="/workspace/submodules/orin/video-service/build-aarch64-nvidia-linux-gcc/vcpkg_installed/arm64-linux-release/share:$CMAKE_PREFIX_PATH"
+export VCPKG_INSTALLED_DIR="/workspace/submodules/orin/video-service/build-aarch64-nvidia-linux-gcc/vcpkg_installed"
+export VCPKG_ROOT="/workspace/submodules/orin/video-service/build-aarch64-nvidia-linux-gcc/_deps/vcpkg-src"
+export spdlog_DIR="/workspace/submodules/orin/video-service/build-aarch64-nvidia-linux-gcc/vcpkg_installed/arm64-linux-release/share/spdlog"
 exec bash build.sh
 EOFSCRIPT
     chmod +x "$TEMP_SCRIPT"
@@ -74,9 +79,11 @@ fi
 mkdir -p "$BUILD_DIR"
 
 {
+    # Ensure CMake can find vcpkg packages for the target triplet
     echo "Build started at $(date)"
     echo "Using toolchain: $TOOLCHAIN_NAME"
     echo "Sourcing environment: $TOOLCHAIN_ENV"
+    echo "CMake toolchain file: $CMAKE_TOOLCHAIN_FILE"
     echo "Build directory: $BUILD_DIR"
 
     # For cross-compilation with vcpkg, we need to use vcpkg's toolchain
