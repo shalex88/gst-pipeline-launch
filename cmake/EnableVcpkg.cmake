@@ -13,6 +13,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(vcpkg)
 
-# Set vcpkg as the main toolchain file
-# For cross-compilation, use VCPKG_CHAINLOAD_TOOLCHAIN_FILE to load the target toolchain
+if (DEFINED VCPKG_CHAINLOAD_TOOLCHAIN_FILE)
+    set(CMAKE_CROSSCOMPILING TRUE)
+endif()
+
 set(CMAKE_TOOLCHAIN_FILE "${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file" FORCE)

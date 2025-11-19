@@ -5,7 +5,6 @@
     "spdlog",
     "fmt",
     "yaml-cpp",
-    "cxxopts",
-    "gstreamer"
+    "cxxopts"
   ]
 }

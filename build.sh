@@ -82,14 +82,10 @@ mkdir -p "$BUILD_DIR"
     # For cross-compilation with vcpkg, we need to use vcpkg's toolchain
     # and chainload the cross-compilation toolchain via VCPKG_CHAINLOAD_TOOLCHAIN_FILE
     if [ -n "$CMAKE_TOOLCHAIN_FILE" ]; then
-        echo "Orin toolchain file: $CMAKE_TOOLCHAIN_FILE"
-        echo "vcpkg will chainload this toolchain"
         cmake -S . -B "$BUILD_DIR" \
             -DCMAKE_BUILD_TYPE=Release \
-            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE" \
-            -DVCPKG_TARGET_TRIPLET=arm64-linux
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE"
     else
-        echo "No CMAKE_TOOLCHAIN_FILE set, using native build"
         cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
     fi
 
