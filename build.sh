@@ -1,7 +1,30 @@
 #!/bin/bash
 
-# Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+configure_toolchain() {
+    if [ -f "$SCRIPT_DIR/toolchain.yml" ]; then
+        TOOLCHAIN_NAME=$(grep "^toolchain:" "$SCRIPT_DIR/toolchain.yml" | awk '{print $2}')
+        if [ -z "$TOOLCHAIN_NAME" ]; then
+            echo "Error: Could not parse toolchain name from toolchain.yml" >&2
+            exit 1
+        fi
+    else
+        echo "Error: toolchain.yml not found" >&2
+        exit 1
+    fi
+
+    TOOLCHAIN_DIR="$SCRIPT_DIR/../../../toolchains/$TOOLCHAIN_NAME"
+    TOOLCHAIN_ENV="$TOOLCHAIN_DIR/env.sh"
+    if [ ! -f "$TOOLCHAIN_ENV" ]; then
+        echo "Error: Toolchain env.sh not found at $TOOLCHAIN_ENV"
+        exit 1
+    fi
+
+    if  ! source "$TOOLCHAIN_ENV"; then
+        exit 1
+    fi
+}
 
 BUILD_TYPE=$1
 if [ -z "$BUILD_TYPE" ] || [ "$BUILD_TYPE" != "native" ] && [ "$BUILD_TYPE" != "cross" ]; then
@@ -9,59 +32,41 @@ if [ -z "$BUILD_TYPE" ] || [ "$BUILD_TYPE" != "native" ] && [ "$BUILD_TYPE" != "
     exit 1
 fi
 
-# Read toolchain name from toolchain.yml
-if [ -f "$SCRIPT_DIR/toolchain.yml" ]; then
-    TOOLCHAIN_NAME=$(grep "^toolchain:" "$SCRIPT_DIR/toolchain.yml" | awk '{print $2}')
-    if [ -z "$TOOLCHAIN_NAME" ]; then
-        echo "Error: Could not parse toolchain name from toolchain.yml"
-        exit 1
-    fi
-else
-    echo "Error: toolchain.yml not found"
-    exit 1
-fi
+if [ "$BUILD_TYPE" == "cross" ]; then
+    configure_toolchain
 
-# Locate and source the toolchain env.sh file
-TOOLCHAIN_DIR="$SCRIPT_DIR/../../../toolchains/$TOOLCHAIN_NAME"
-TOOLCHAIN_ENV="$TOOLCHAIN_DIR/env.sh"
-if [ ! -f "$TOOLCHAIN_ENV" ]; then
-    echo "Error: Toolchain env.sh not found at $TOOLCHAIN_ENV"
-    exit 1
-fi
-
-source "$TOOLCHAIN_ENV"
-
-# Check if we should use Docker for building
-if [ "$USE_DOCKER_BUILD" = "1" ]; then
-    RUN_CONTAINER_SCRIPT="$DOCKER_TOOLCHAIN_DIR/run_container.sh"
-    if [ ! -f "$RUN_CONTAINER_SCRIPT" ]; then
-        echo "Error: run_container.sh not found at $RUN_CONTAINER_SCRIPT"
-        exit 1
-    fi
-    
-    # Get the project root (3 levels up from toolchain dir)
-    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-    
-    # Create a temporary script to run inside the container
-    TEMP_SCRIPT="/tmp/docker_build_${TOOLCHAIN_NAME}_$$.sh"
-    cat > "$TEMP_SCRIPT" << EOFSCRIPT
+    # Check if we should use Docker for building
+    if [ "$USE_DOCKER_BUILD" = "1" ]; then
+        RUN_CONTAINER_SCRIPT="$DOCKER_TOOLCHAIN_DIR/run_container.sh"
+        if [ ! -f "$RUN_CONTAINER_SCRIPT" ]; then
+            echo "Error: run_container.sh not found at $RUN_CONTAINER_SCRIPT"
+            exit 1
+        fi
+        
+        # Get the project root (3 levels up from toolchain dir)
+        PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+        
+        # Create a temporary script to run inside the container
+        TEMP_SCRIPT="/tmp/docker_build_${TOOLCHAIN_NAME}_$$.sh"
+        cat > "$TEMP_SCRIPT" << EOFSCRIPT
 #!/bin/bash
 set -e
 cd /workspace/submodules/orin/video-service
 source /workspace/toolchains/"$TOOLCHAIN_NAME"/env.sh
 exec bash build.sh "$BUILD_TYPE"
 EOFSCRIPT
-    chmod +x "$TEMP_SCRIPT"
-    
-    # Run build inside Docker container
-    # Mount the entire project root so all submodules are accessible
-    "$RUN_CONTAINER_SCRIPT" \
-        --args "-v $PROJECT_ROOT:/workspace -v $TEMP_SCRIPT:/tmp/docker_build.sh -w /workspace/submodules/orin/video-service" \
-        --exec "/tmp/docker_build.sh"
-    
-    BUILD_EXIT=$?
-    rm -f "$TEMP_SCRIPT"
-    exit $BUILD_EXIT
+        chmod +x "$TEMP_SCRIPT"
+        
+        # Run build inside Docker container
+        # Mount the entire project root so all submodules are accessible
+        "$RUN_CONTAINER_SCRIPT" \
+            --args "-v $PROJECT_ROOT:/workspace -v $TEMP_SCRIPT:/tmp/docker_build.sh -w /workspace/submodules/orin/video-service" \
+            --exec "/tmp/docker_build.sh"
+        
+        BUILD_EXIT=$?
+        rm -f "$TEMP_SCRIPT"
+        exit $BUILD_EXIT
+    fi
 fi
 
 BUILD_DIR="build-$BUILD_TYPE"
