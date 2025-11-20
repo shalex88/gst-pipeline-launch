@@ -3,6 +3,12 @@
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+BUILD_TYPE=$1
+if [ -z "$BUILD_TYPE" ] || [ "$BUILD_TYPE" != "native" ] && [ "$BUILD_TYPE" != "cross" ]; then
+    echo "Error: Invalid or missing build type. Use 'native' or 'cross'." >&2
+    exit 1
+fi
+
 # Read toolchain name from toolchain.yml
 if [ -f "$SCRIPT_DIR/toolchain.yml" ]; then
     TOOLCHAIN_NAME=$(grep "^toolchain:" "$SCRIPT_DIR/toolchain.yml" | awk '{print $2}')
@@ -27,10 +33,6 @@ source "$TOOLCHAIN_ENV"
 
 # Check if we should use Docker for building
 if [ "$USE_DOCKER_BUILD" = "1" ]; then
-    echo "Docker build mode detected"
-    echo "Building Docker image and running build inside container..."
-    
-    # Find the Dockerfile location
     RUN_CONTAINER_SCRIPT="$DOCKER_TOOLCHAIN_DIR/run_container.sh"
     if [ ! -f "$RUN_CONTAINER_SCRIPT" ]; then
         echo "Error: run_container.sh not found at $RUN_CONTAINER_SCRIPT"
@@ -42,17 +44,12 @@ if [ "$USE_DOCKER_BUILD" = "1" ]; then
     
     # Create a temporary script to run inside the container
     TEMP_SCRIPT="/tmp/docker_build_${TOOLCHAIN_NAME}_$$.sh"
-    cat > "$TEMP_SCRIPT" << 'EOFSCRIPT'
+    cat > "$TEMP_SCRIPT" << EOFSCRIPT
 #!/bin/bash
 set -e
 cd /workspace/submodules/orin/video-service
-source /workspace/toolchains/aarch64-nvidia-linux-gcc/env.sh
-# Ensure CMake and vcpkg can find packages for the target triplet
-export CMAKE_PREFIX_PATH="/workspace/submodules/orin/video-service/build-aarch64-nvidia-linux-gcc/vcpkg_installed/arm64-linux-release/share:$CMAKE_PREFIX_PATH"
-export VCPKG_INSTALLED_DIR="/workspace/submodules/orin/video-service/build-aarch64-nvidia-linux-gcc/vcpkg_installed"
-export VCPKG_ROOT="/workspace/submodules/orin/video-service/build-aarch64-nvidia-linux-gcc/_deps/vcpkg-src"
-export spdlog_DIR="/workspace/submodules/orin/video-service/build-aarch64-nvidia-linux-gcc/vcpkg_installed/arm64-linux-release/share/spdlog"
-exec bash build.sh
+source /workspace/toolchains/"$TOOLCHAIN_NAME"/env.sh
+exec bash build.sh "$BUILD_TYPE"
 EOFSCRIPT
     chmod +x "$TEMP_SCRIPT"
     
@@ -67,38 +64,29 @@ EOFSCRIPT
     exit $BUILD_EXIT
 fi
 
-BUILD_DIR="build-$TOOLCHAIN_NAME"
+BUILD_DIR="build-$BUILD_TYPE"
 LOG_FILE="$BUILD_DIR/build.log"
 
-# Create build directory if it doesn't exist
-# Clean CMake cache if it exists to ensure fresh configuration
-if [ -d "$BUILD_DIR" ]; then
-    rm -f "$BUILD_DIR/CMakeCache.txt"
-    rm -rf "$BUILD_DIR/CMakeFiles"
-fi
 mkdir -p "$BUILD_DIR"
 
 {
-    # Ensure CMake can find vcpkg packages for the target triplet
     echo "Build started at $(date)"
-    echo "Using toolchain: $TOOLCHAIN_NAME"
-    echo "Sourcing environment: $TOOLCHAIN_ENV"
-    echo "CMake toolchain file: $CMAKE_TOOLCHAIN_FILE"
+    if [ "$BUILD_TYPE" == "cross" ]; then
+        echo "Using toolchain: $TOOLCHAIN_NAME"
+    else
+        echo "Native build"
+    fi
     echo "Build directory: $BUILD_DIR"
 
-    # For cross-compilation with vcpkg, we need to use vcpkg's toolchain
-    # and chainload the cross-compilation toolchain via VCPKG_CHAINLOAD_TOOLCHAIN_FILE
-    if [ -n "$CMAKE_TOOLCHAIN_FILE" ]; then
-        cmake -S . -B "$BUILD_DIR" \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE"
+    if [ "$BUILD_TYPE" == "cross" ]; then
+        cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE"
     else
         cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
     fi
 
     CMAKE_EXIT=$?
     if [ $CMAKE_EXIT -ne 0 ]; then
-        echo "CMake configuration failed with exit code $CMAKE_EXIT"
+        echo "CMake configuration failed with exit code $CMAKE_EXIT" >&2
         echo "Build completed at $(date)"
         exit $CMAKE_EXIT
     fi
