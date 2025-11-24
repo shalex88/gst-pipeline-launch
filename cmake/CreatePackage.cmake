@@ -1,0 +1,10 @@
+include(InstallRequiredSystemLibraries)
+
+set(CPACK_PACKAGE_CONTACT "Alex Sh <shalex.work@gmail.com>")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "My project")
+
+set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
+
+include(CPack)

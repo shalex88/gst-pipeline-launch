@@ -1,4 +1,4 @@
-# gst-pipeline-launch
+# video-player
 
 [![Build and Run](https://github.com/shalex88/gst-example/actions/workflows/build.yaml/badge.svg)](https://github.com/shalex88/gst-example/actions/workflows/build.yaml)
 
@@ -18,7 +18,7 @@ sudo apt -y install pkg-config bison flex nasm
 - Separate PipelineManager to low level gst pipeline and high level PipelineManager
 - Notify user on unsupported commands and fails
 - Fix inconsistent representation of multiple GstElement references in PipelineElement (e.g., tee vs. mux)
-- Move the resources dir to the main project, it is not gst-pipeline-launcher related
+- Move the config dir to the main project, it is not video-player related
 - MAIN PROJECT: Add nvmsgconv parser lib sources from /opt/nvidia/deepstream/deepstream-7.0/sources/libs/nvmsgconv to the project
 - Support explicit src pad name in Parser and PipelineElement
 - Refactor gst logging messages
@@ -26,6 +26,11 @@ sudo apt -y install pkg-config bison flex nasm
 - Add cmake presets
 
 ## Build options
+
+### Override install root
+
+When configuring the project, you can override the default install root (default: `/tmp/project`) by passing `-DMYAPP_INSTALL_ROOT=<path>` to `cmake`. If the path you provide already includes the project name (for example `/opt/deploy/video-player`), that location will be used as-is; otherwise the project name will be appended so the final install location becomes `<root>/<project-name>`.
+
 
 This project is designed to build consistently in three ways: via the provided script (with Docker), directly in CLion using a Docker toolchain, and natively on your host IDE.
 

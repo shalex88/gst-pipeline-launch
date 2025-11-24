@@ -1,10 +1,11 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 configure_toolchain() {
-    if [ -f "$SCRIPT_DIR/toolchain.yml" ]; then
-        TOOLCHAIN_NAME=$(grep "^toolchain:" "$SCRIPT_DIR/toolchain.yml" | awk '{print $2}')
+    if [ -f "$ROOT_DIR/toolchain.yml" ]; then
+        TOOLCHAIN_NAME=$(grep "^toolchain:" "$ROOT_DIR/toolchain.yml" | awk '{print $2}')
         if [ -z "$TOOLCHAIN_NAME" ]; then
             echo "Error: Could not parse toolchain name from toolchain.yml" >&2
             exit 1
@@ -14,7 +15,7 @@ configure_toolchain() {
         exit 1
     fi
 
-    TOOLCHAIN_DIR="$SCRIPT_DIR/../../../toolchains/$TOOLCHAIN_NAME"
+    TOOLCHAIN_DIR="$ROOT_DIR/../../../toolchains/$TOOLCHAIN_NAME"
     TOOLCHAIN_ENV="$TOOLCHAIN_DIR/env.sh"
     if [ ! -f "$TOOLCHAIN_ENV" ]; then
         echo "Error: Toolchain env.sh not found at $TOOLCHAIN_ENV"
@@ -34,7 +35,6 @@ fi
 
 if [ "$BUILD_TYPE" == "cross" ]; then
     configure_toolchain
-
     # Check if we should use Docker for building
     if [ "$USE_DOCKER_BUILD" = "1" ]; then
         RUN_CONTAINER_SCRIPT="$DOCKER_TOOLCHAIN_DIR/run_container.sh"
@@ -42,18 +42,16 @@ if [ "$BUILD_TYPE" == "cross" ]; then
             echo "Error: run_container.sh not found at $RUN_CONTAINER_SCRIPT"
             exit 1
         fi
-        
-        # Get the project root (3 levels up from toolchain dir)
-        PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+        PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
         
         # Create a temporary script to run inside the container
-        TEMP_SCRIPT="/tmp/docker_build_${TOOLCHAIN_NAME}_$$.sh"
+        TEMP_SCRIPT="/tmp/docker_build_${BUILD_TYPE}_$$.sh"
         cat > "$TEMP_SCRIPT" << EOFSCRIPT
-#!/bin/bash
-set -e
+#!/bin/bash -e
 cd /workspace/submodules/orin/video-service
 source /workspace/toolchains/"$TOOLCHAIN_NAME"/env.sh
-exec bash build.sh "$BUILD_TYPE"
+exec bash scripts/build.sh "$BUILD_TYPE"
 EOFSCRIPT
         chmod +x "$TEMP_SCRIPT"
         
@@ -99,7 +97,7 @@ mkdir -p "$BUILD_DIR"
     cmake --build "$BUILD_DIR" -- -j"$(nproc)"
     BUILD_EXIT=$?
 
-    echo "Build log saved to $SCRIPT_DIR/$LOG_FILE"
+    echo "Build log saved to $PROJECT_ROOT/$LOG_FILE"
     echo "Build completed at $(date)"
     exit $BUILD_EXIT
 } 2>&1 | tee "$LOG_FILE"

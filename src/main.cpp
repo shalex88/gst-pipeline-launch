@@ -7,7 +7,7 @@
 AppConfig parse_command_line_arguments(const int argc, const char* argv[]) {
     cxxopts::Options options(argv[0], "Gstreamer runner");
     options.add_options()
-        ("i,input", "Input YAML pipeline file", cxxopts::value<std::filesystem::path>()->default_value("../resources/pipeline.yaml"))
+        ("i,input", "Input YAML pipeline file", cxxopts::value<std::filesystem::path>()->default_value("../config/pipeline.yaml"))
         ("p,port", "Port for TCP socket", cxxopts::value<unsigned int>()->default_value("12345"))
         ("v,verbose", "Enable verbose logging", cxxopts::value<bool>()->default_value("false"))
         ("h,help", "Print usage");
@@ -32,13 +32,13 @@ AppConfig parse_command_line_arguments(const int argc, const char* argv[]) {
 void custom_log_handler(GstDebugCategory* category, GstDebugLevel level, const gchar* file, const gchar* function, gint line, GObject* object, GstDebugMessage* message, gpointer user_data) {
     const gchar* log_message = gst_debug_message_get(message);
     const gchar* object_name = "";
-  
+
     if (object && GST_IS_PAD(object)) {
         const gchar* parent_name = GST_OBJECT_PARENT(object) ? GST_OBJECT_NAME(GST_OBJECT_PARENT(object)) : "unknown";
         const gchar* pad_name = GST_OBJECT_NAME(object);
         object_name = g_strdup_printf("%s:%s", parent_name, pad_name);
     }
-    
+
     std::string log_print = fmt::format("[{}()<{}>] {}", function, object_name, log_message);
 
     switch (level) {

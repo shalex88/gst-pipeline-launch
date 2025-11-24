@@ -13,9 +13,9 @@
 property:
   gpu-id: 0
   net-scale-factor: 0.00392156862745098
-  model-engine-file: /home/fronti/project/video/gst-pipeline-launch/resources/detector/resnet18_trafficcamnet.engine
-  labelfile-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/labels.txt
-  int8-calib-file: /home/fronti/project/video/gst-pipeline-launch/resources/detector/cal_trt.bin
+  model-engine-file: /tmp/project/video-player/config/detector/resnet18_trafficcamnet.engine
+  labelfile-path: /tmp/project/video-player/config/detector/labels.txt
+  int8-calib-file: /tmp/project/video-player/config/detector/cal_trt.bin
   batch-size: 1
   network-mode: 1
   num-detected-classes: 4
