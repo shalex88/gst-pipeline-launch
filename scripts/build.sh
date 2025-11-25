@@ -44,7 +44,7 @@ if [ "$BUILD_TYPE" == "cross" ]; then
         fi
 
         PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-        
+
         # Create a temporary script to run inside the container
         TEMP_SCRIPT="/tmp/docker_build_${BUILD_TYPE}_$$.sh"
         cat > "$TEMP_SCRIPT" << EOFSCRIPT
@@ -54,17 +54,21 @@ source /workspace/toolchains/"$TOOLCHAIN_NAME"/env.sh
 exec bash scripts/build.sh "$BUILD_TYPE"
 EOFSCRIPT
         chmod +x "$TEMP_SCRIPT"
-        
+
         # Run build inside Docker container
         # Mount the entire project root so all submodules are accessible
         "$RUN_CONTAINER_SCRIPT" \
             --args "-v $PROJECT_ROOT:/workspace -v $TEMP_SCRIPT:/tmp/docker_build.sh -w /workspace/submodules/orin/video-service" \
             --exec "/tmp/docker_build.sh"
-        
+
         BUILD_EXIT=$?
         rm -f "$TEMP_SCRIPT"
         exit $BUILD_EXIT
     fi
+fi
+
+if [ "$BUILD_TYPE" == "native" ]; then
+    sudo apt -y install pkg-config libgstreamer1.0-dev
 fi
 
 BUILD_DIR="build-$BUILD_TYPE"
@@ -103,4 +107,4 @@ mkdir -p "$BUILD_DIR"
 } 2>&1 | tee "$LOG_FILE"
 
 # Capture the exit code from the subshell
-exit ${PIPESTATUS[0]}
+exit "${PIPESTATUS[0]}"
