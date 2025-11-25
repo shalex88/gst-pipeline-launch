@@ -100,6 +100,14 @@ mkdir -p "$BUILD_DIR"
 
     cmake --build "$BUILD_DIR" -- -j"$(nproc)"
     BUILD_EXIT=$?
+    if [ $BUILD_EXIT -ne 0 ]; then
+        echo "Build failed with exit code $BUILD_EXIT" >&2
+        echo "Build completed at $(date)"
+        exit $BUILD_EXIT
+    fi
+
+    cmake --build "$BUILD_DIR" --target package
+    BUILD_EXIT=$?
 
     echo "Build log saved to $PROJECT_ROOT/$LOG_FILE"
     echo "Build completed at $(date)"

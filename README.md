@@ -24,6 +24,7 @@ sudo apt -y install pkg-config bison flex nasm
 - Refactor gst logging messages
 - Investigate why the CI run fails when running on Ubuntu 24.04 but does work locally
 - Add cmake presets
+- Add a .deb runtime dependency on gstreamer packages
 
 ## Build options
 
