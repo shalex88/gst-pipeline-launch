@@ -49,16 +49,26 @@ if [ "$BUILD_TYPE" == "cross" ]; then
         TEMP_SCRIPT="/tmp/docker_build_${BUILD_TYPE}_$$.sh"
         cat > "$TEMP_SCRIPT" << EOFSCRIPT
 #!/bin/bash -e
-cd /workspace/submodules/orin/video-service
+cd /workspace/submodules/orin/video-player
 source /workspace/toolchains/"$TOOLCHAIN_NAME"/env.sh
+# Propagate INSTALL_ROOT if set
+if [ -n "\${INSTALL_ROOT:-}" ]; then
+    export INSTALL_ROOT
+fi
 exec bash scripts/build.sh "$BUILD_TYPE"
 EOFSCRIPT
         chmod +x "$TEMP_SCRIPT"
 
         # Run build inside Docker container
         # Mount the entire project root so all submodules are accessible
+        # Propagate INSTALL_ROOT into the container if set
+        DOCKER_ARGS="-v $PROJECT_ROOT:/workspace -v $TEMP_SCRIPT:/tmp/docker_build.sh -w /workspace/submodules/orin/video-player"
+        if [ -n "${INSTALL_ROOT:-}" ]; then
+            DOCKER_ARGS="$DOCKER_ARGS -e INSTALL_ROOT=$INSTALL_ROOT"
+            echo "Propagating INSTALL_ROOT to container: $INSTALL_ROOT"
+        fi
         "$RUN_CONTAINER_SCRIPT" \
-            --args "-v $PROJECT_ROOT:/workspace -v $TEMP_SCRIPT:/tmp/docker_build.sh -w /workspace/submodules/orin/video-service" \
+            --args "$DOCKER_ARGS" \
             --exec "/tmp/docker_build.sh"
 
         BUILD_EXIT=$?
@@ -67,6 +77,7 @@ EOFSCRIPT
     fi
 fi
 
+# Use this to prevent installing gstreamer via vcpkg
 if [ "$BUILD_TYPE" == "native" ]; then
     sudo apt -y install pkg-config libgstreamer1.0-dev
 fi
@@ -85,10 +96,19 @@ mkdir -p "$BUILD_DIR"
     fi
     echo "Build directory: $BUILD_DIR"
 
+    CMAKE_ARGS=(-G Ninja -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release)
+    
+    # Add install prefix if INSTALL_ROOT is set
+    if [ -n "${INSTALL_ROOT:-}" ]; then
+        CMAKE_ARGS+=(-DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" -DINSTALL_ROOT="$INSTALL_ROOT")
+        echo "Install prefix: $INSTALL_ROOT"
+    fi
+
     if [ "$BUILD_TYPE" == "cross" ]; then
-        cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE"
+        CMAKE_ARGS+=(-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE" -DVCPKG_TARGET_TRIPLET="$VCPKG_TARGET_TRIPLET")
+        cmake "${CMAKE_ARGS[@]}"
     else
-        cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
+        cmake "${CMAKE_ARGS[@]}"
     fi
 
     CMAKE_EXIT=$?

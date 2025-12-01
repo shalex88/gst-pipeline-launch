@@ -44,7 +44,7 @@ Common notes
 ### 1) Build with the script (Docker or native)
 
 ```bash
-cd submodules/orin/video-service
+cd submodules/orin/video-player
 ./build.sh
 ```
 
