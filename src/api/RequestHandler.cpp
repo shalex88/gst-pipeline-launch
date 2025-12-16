@@ -1,11 +1,12 @@
 #include "RequestHandler.h"
 
+#include <chrono>
+
 #include "common/logger/Logger.h"
 #include "core/ICore.h"
 
 namespace service::api {
-    RequestHandler::RequestHandler(std::unique_ptr<core::ICore> core)
-        : core_(std::move(core)), running_(false) {
+    RequestHandler::RequestHandler(std::unique_ptr<core::ICore> core) : core_(std::move(core)) {
         if (!core_) {
             throw std::invalid_argument("Core cannot be null");
         }
@@ -24,6 +25,9 @@ namespace service::api {
         }
 
         running_ = true;
+        monitor_thread_ = std::jthread([this] {
+            monitorCore();
+        });
         LOG_DEBUG("RequestHandler started");
         return Result<void>::success();
     }
@@ -47,6 +51,19 @@ namespace service::api {
     }
 
     bool RequestHandler::isRunning() const {
-        return running_;
+        return running_.load();
+    }
+
+    void RequestHandler::monitorCore() {
+        while (running_.load()) {
+            if (!core_ || !core_->isRunning()) {
+                LOG_DEBUG("Core stopped, stopping RequestHandler");
+                if (const auto result = stop(); result.isError()) {
+                    LOG_ERROR("Failed to stop RequestHandler: {}", result.error());
+                }
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 }

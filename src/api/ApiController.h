@@ -13,8 +13,8 @@ namespace service::api {
 
     class ApiController final {
     public:
-    explicit ApiController(std::unique_ptr<IRequestHandler> request_handler,
-                   std::unique_ptr<ITransport> transport, std::string server_address);
+        explicit ApiController(std::unique_ptr<IRequestHandler> request_handler, std::unique_ptr<ITransport> transport,
+                               std::string server_address);
         ~ApiController();
 
         Result<void> startAsync();
@@ -22,10 +22,13 @@ namespace service::api {
         bool isRunning() const;
 
     private:
+        void monitorRequestHandler();
+
         std::unique_ptr<IRequestHandler> request_handler_;
         std::unique_ptr<ITransport> transport_;
         std::string server_address_;
-        std::atomic<bool> is_running_;
+        std::atomic<bool> is_running_{false};
         std::jthread service_thread_;
+        std::jthread monitor_thread_;
     };
 }

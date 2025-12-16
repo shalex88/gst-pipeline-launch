@@ -4,8 +4,7 @@
 #include "core/pipeline/PipelineManager.h"
 
 namespace service::core {
-    Core::Core()
-        : pipeline_manager_(nullptr) {
+    Core::Core() : pipeline_manager_(nullptr) {
     }
 
     Core::~Core() {
@@ -19,7 +18,9 @@ namespace service::core {
 
         is_running_ = true;
         pipeline_manager_ = std::make_unique<PipelineManager>("/home/shalex/dev/video-player/config/pipeline.yaml"); //FIXME: hardcoded path
-        pipeline_thread_ = std::jthread([this] { runPipelineThread(); });
+        pipeline_thread_ = std::jthread([this] {
+            runPipelineThread();
+        });
 
         LOG_DEBUG("Running");
         return Result<void>::success();
@@ -45,7 +46,9 @@ namespace service::core {
             if (const auto ec = pipeline_manager_->play()) {
                 LOG_ERROR("Failed to play pipeline {}", ec.message());
             }
-            stop();
+            if (const auto result = stop(); result.isError()) {
+                LOG_ERROR("Failed to stop Core: {}", result.error());
+            }
         }
     }
 }

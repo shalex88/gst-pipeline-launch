@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <memory>
+#include <thread>
 
 #include "api/IRequestHandler.h"
 #include "common/types/Result.h"
@@ -20,7 +21,10 @@ namespace service::api {
         bool isRunning() const override;
 
     private:
+        void monitorCore();
+
         std::unique_ptr<core::ICore> core_;
-        std::atomic<bool> running_;
+        std::atomic<bool> running_{false};
+        std::jthread monitor_thread_;
     };
 }

@@ -1,5 +1,6 @@
 #include "ApiController.h"
 
+#include <chrono>
 #include <utility>
 
 #include "api/IRequestHandler.h"
@@ -8,9 +9,11 @@
 
 namespace service::api {
     ApiController::ApiController(std::unique_ptr<IRequestHandler> request_handler,
-                                 std::unique_ptr<ITransport> transport, std::string server_address)
-        : request_handler_(std::move(request_handler)), transport_(std::move(transport)),
-          server_address_(std::move(server_address)), is_running_(false) {
+                                 std::unique_ptr<ITransport> transport,
+                                 std::string server_address) : request_handler_(std::move(request_handler)),
+                                                               transport_(std::move(transport)),
+                                                               server_address_(std::move(server_address)),
+                                                               is_running_(false) {
         if (!request_handler_) {
             throw std::invalid_argument("Request Handler cannot be null");
         }
@@ -51,6 +54,10 @@ namespace service::api {
             }
         });
 
+        monitor_thread_ = std::jthread([this] {
+            monitorRequestHandler();
+        });
+
         LOG_DEBUG("ApiController started");
 
         return Result<void>::success();
@@ -78,5 +85,18 @@ namespace service::api {
 
     bool ApiController::isRunning() const {
         return is_running_;
+    }
+
+    void ApiController::monitorRequestHandler() {
+        while (is_running_.load()) {
+            if (!request_handler_ || !request_handler_->isRunning()) {
+                LOG_DEBUG("RequestHandler stopped, stopping ApiController");
+                if (const auto result = stop(); result.isError()) {
+                    LOG_ERROR("Failed to stop ApiController: {}", result.error());
+                }
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 }

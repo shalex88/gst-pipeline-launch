@@ -9,5 +9,7 @@ namespace service::core {
 
         virtual Result<void> start() = 0;
         virtual Result<void> stop() = 0;
+        virtual bool isRunning() const = 0;
     };
 }
+
