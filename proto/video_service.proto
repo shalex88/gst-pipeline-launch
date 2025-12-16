@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package video;
+
+service VideoService {
+  rpc EnableElement (EnableElementRequest) returns (EnableElementResponse) {}
+  rpc DisableElement (DisableElementRequest) returns (DisableElementResponse) {}
+}
+
+message EnableElementRequest {
+  string element = 1;
+}
+
+message EnableElementResponse {
+}
+
+message DisableElementRequest {
+  string element = 1;
+}
+
+message DisableElementResponse {
+}

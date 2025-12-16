@@ -3,8 +3,8 @@
   "version": "@VERSION@",
   "dependencies": [
     "spdlog",
-    "fmt",
     "yaml-cpp",
-    "cxxopts"
+    "grpc",
+    "cli11"
   ]
 }
