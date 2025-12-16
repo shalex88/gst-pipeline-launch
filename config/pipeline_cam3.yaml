@@ -4,7 +4,7 @@ pipeline:
       elements:
         - name: v4l2src
           properties:
-            device: /dev/video3
+            device: /dev/video2
         - name: capsfilter
           properties:
             caps: video/x-raw,format=UYVY,width=1920,height=1080,framerate=30/1
@@ -12,7 +12,7 @@ pipeline:
           optional: true
         - name: textoverlay
           properties:
-            text: CAM4
+            text: CAM3
             valignment: top
             halignment: left
         - name: timeoverlay
@@ -31,14 +31,14 @@ pipeline:
         - name: nvinfer
           optional: true
           properties:
-            config-file-path: /home/fronti/project/video/gst-pipeline-launch/resources/detector/infer_config.yml
+            config-file-path: /tmp/project/video-player/config/detector/infer_config.yml
         - name: nvmsgconv
           #FIXME: if enabled by default, but nvinfer is not enabled, it pipeline will fail
           optional: true
           properties:
             comp-id: 0
-            config: /home/fronti/project/video/gst-pipeline-launch/resources/message/msgconv_config.yml
-            debug-payload-dir: /home/fronti/project/video/gst-pipeline-launch/log/app
+            config: /tmp/project/video-player/config/message/msgconv_config.yml
+            debug-payload-dir: /tmp/project/video-player/log/app
             dummy-payload: false
             frame-interval: 1
             msg2p-lib: /opt/nvidia/deepstream/deepstream/lib/libnvds_msgconv.so
@@ -55,4 +55,4 @@ pipeline:
         - name: h264parse
         - name: rtspclientsink
           properties:
-            location: rtsp://localhost:8554/stream4
+            location: rtsp://localhost:8554/stream3

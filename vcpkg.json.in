@@ -1,4 +1,6 @@
 {
+  "name": "@PROJECT_NAME@",
+  "version": "@VERSION@",
   "dependencies": [
     "spdlog",
     "fmt",
