@@ -4,7 +4,7 @@
 #include <iostream>
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/ostream_sink.h"
-#include "Logger/LoggerInterface.h"
+#include "common/Logger/LoggerInterface.h"
 
 class SpdLogAdapter : public LoggerInterface {
 public:

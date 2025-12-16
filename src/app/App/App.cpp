@@ -1,13 +1,13 @@
 #include "App.h"
 #include <csignal>
 #include <filesystem>
-#include "Pipeline/PipelineManager.h"
-#include "Pipeline/PipelineCommands.h"
-#include "AppInputs/MessageServer.h"
-#include "Network/TcpNetworkManager.h"
-#include "TasksManager/CommandDispatcher.h"
-#include "TasksManager/Scheduler.h"
-#include "App/SignalHandler.h"
+#include "infrastructure/Pipeline/PipelineManager.h"
+#include "infrastructure/Pipeline/PipelineCommands.h"
+#include "common/AppInputs/MessageServer.h"
+#include "api/Network/TcpNetworkManager.h"
+#include "api/TasksManager/CommandDispatcher.h"
+#include "api/TasksManager/Scheduler.h"
+#include "app/App/SignalHandler.h"
 
 std::atomic<bool> App::keep_running_ = true;
 

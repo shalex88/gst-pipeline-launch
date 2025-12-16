@@ -1,8 +1,8 @@
 #ifndef PERIPHERY_MANAGER_COMMANDINTERFACE_H
 #define PERIPHERY_MANAGER_COMMANDINTERFACE_H
 
-#include "Logger/Logger.h"
-#include "AppInputs/InputInterface.h"
+#include "common/Logger/Logger.h"
+#include "common/AppInputs/InputInterface.h"
 
 class CommandInterface {
 public:

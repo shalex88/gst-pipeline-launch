@@ -3,7 +3,7 @@
 
 #include <utility>
 
-#include "TasksManager/CommandInterface.h"
+#include "api/TasksManager/CommandInterface.h"
 #include "PipelineManager.h"
 
 class EnableOptionalElementCommand : public CommandInterface {

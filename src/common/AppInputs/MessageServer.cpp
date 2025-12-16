@@ -3,7 +3,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
-#include "Logger/Logger.h"
+#include "common/Logger/Logger.h"
 
 MessageServer::MessageServer(std::shared_ptr<CommandDispatcher> command_dispatcher, std::shared_ptr<NetworkInterface> network_manager)
     : command_dispatcher_(std::move(command_dispatcher)), network_manager_(std::move(network_manager)) {

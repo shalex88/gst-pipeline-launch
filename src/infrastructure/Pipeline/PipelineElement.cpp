@@ -1,5 +1,5 @@
 #include <sstream>
-#include "Logger/Logger.h"
+#include "common/Logger/Logger.h"
 #include "PipelineElement.h"
 
 PipelineElement::PipelineElement(const unsigned int id, std::string name, std::string type, std::string branch,

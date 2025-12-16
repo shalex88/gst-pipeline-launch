@@ -5,7 +5,7 @@
 #include <vector>
 #include <mutex>
 #include <gst/gst.h>
-#include "Pipeline/PipelineElement.h"
+#include "infrastructure/Pipeline/PipelineElement.h"
 
 class PipelineManager {
 public:

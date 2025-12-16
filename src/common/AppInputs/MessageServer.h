@@ -1,8 +1,8 @@
 #ifndef PERIPHERY_MANAGER_MESSAGESERVER_H
 #define PERIPHERY_MANAGER_MESSAGESERVER_H
 
-#include "TasksManager/CommandDispatcher.h"
-#include "Network/NetworkInterface.h"
+#include "api/TasksManager/CommandDispatcher.h"
+#include "api/Network/NetworkInterface.h"
 #include "InputInterface.h"
 #include <atomic>
 #include <iostream>

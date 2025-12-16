@@ -1,5 +1,5 @@
 #include "SignalHandler.h"
-#include "Logger/Logger.h"
+#include "common/Logger/Logger.h"
 
 void SignalHandler::setupSignalHandling() {
     std::signal(SIGINT, signalHandler);

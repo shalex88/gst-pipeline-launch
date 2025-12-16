@@ -8,12 +8,12 @@
 #include <utility>
 #include <vector>
 #include <memory>
-#include "TasksManager/CommandInterface.h"
-#include "AppInputs/InputInterface.h"
+#include "api/TasksManager/CommandInterface.h"
+#include "common/AppInputs/InputInterface.h"
 
 class Scheduler {
 public:
-    explicit Scheduler(const size_t thread_count = 1);
+    explicit Scheduler(size_t thread_count = 1);
     ~Scheduler();
     void init();
     void deinit();

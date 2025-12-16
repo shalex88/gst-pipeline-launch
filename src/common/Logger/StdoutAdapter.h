@@ -2,7 +2,7 @@
 #define PERIPHERY_MANAGER_STDOUTADAPTER_H
 
 #include <iostream>
-#include "Logger/LoggerInterface.h"
+#include "common/Logger/LoggerInterface.h"
 
 class StdoutAdapter : public LoggerInterface {
 public:

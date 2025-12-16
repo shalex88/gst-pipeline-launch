@@ -2,9 +2,9 @@
 #define PIPELINEPARSER_H
 
 #include <vector>
-#include "Pipeline/PipelineElement.h"
-#include <File/File.h>
 #include <yaml-cpp/yaml.h>
+#include "common/File/File.h"
+#include "infrastructure/Pipeline/PipelineElement.h"
 
 class PipelineParser {
 public:

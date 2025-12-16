@@ -1,8 +1,8 @@
 #include <filesystem>
-#include "Logger/Logger.h"
+#include "common/Logger/Logger.h"
 #include "cxxopts.hpp"
 #include <gst/gst.h>
-#include "App/App.h"
+#include "app/App/App.h"
 
 AppConfig parse_command_line_arguments(const int argc, const char* argv[]) {
     cxxopts::Options options(argv[0], "Gstreamer runner");

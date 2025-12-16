@@ -4,9 +4,9 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
-#include "TasksManager/CommandInterface.h"
-#include "TasksManager/Scheduler.h"
-#include "AppInputs/InputInterface.h"
+#include "api/TasksManager/CommandInterface.h"
+#include "api/TasksManager/Scheduler.h"
+#include "common/AppInputs/InputInterface.h"
 
 class CommandDispatcher {
 public:

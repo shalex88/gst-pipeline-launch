@@ -2,7 +2,7 @@
 #define PERIPHERY_MANAGER_SIGNALHANDLER_H
 
 #include <csignal>
-#include "App/App.h"
+#include "app/App/App.h"
 
 class SignalHandler {
 public:

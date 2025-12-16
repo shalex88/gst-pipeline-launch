@@ -1,8 +1,8 @@
 #ifndef PERIPHERY_MANAGER_LOGGER_H
 #define PERIPHERY_MANAGER_LOGGER_H
 
-#include "Logger/LoggerInterface.h"
-#include "Logger/SpdLogAdapter.h" /* Or use StdoutAdapter.h */
+#include "common/Logger/LoggerInterface.h"
+#include "common/Logger/SpdLogAdapter.h" /* Or use StdoutAdapter.h */
 #include <memory>
 
 class Logger {

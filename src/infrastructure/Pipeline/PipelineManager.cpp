@@ -1,7 +1,7 @@
 #include <utility>
 #include <sstream>
 #include <unordered_set>
-#include "Pipeline/PipelineParser.h"
+#include "infrastructure/Pipeline/PipelineParser.h"
 #include "PipelineElement.h"
 #include "PipelineManager.h"
 

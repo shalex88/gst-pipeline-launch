@@ -3,7 +3,7 @@
 
 #include <string>
 #include <arpa/inet.h>
-#include "PeripheryManager/HwInterface.h"
+#include "api/PeripheryManager/HwInterface.h"
 
 class Ethernet : public HwInterface {
 public:
