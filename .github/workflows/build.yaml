@@ -21,8 +21,14 @@ jobs:
       id: repo-name
       run: echo "name=$(echo "${{github.repository}}" | awk -F '/' '{print $2}')" >> $GITHUB_OUTPUT
 
+    - name: Install dependencies
+      run: sudo apt-get -y update && sudo apt-get install -y ninja-build libunwind-dev &&
+        sudo apt-get -y install pkg-config libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+        libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+        gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
+
     - name: Build
       run: ./scripts/build.sh native
 
     - name: Run
-      run: cd ./build-native && ./${{steps.repo-name.outputs.name}} -i ../config/pipeline.yaml -v
+      run: cd ./build-native && ./${{steps.repo-name.outputs.name}} -i ../config/pipeline_test.yaml -v
