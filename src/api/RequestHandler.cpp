@@ -54,10 +54,45 @@ namespace service::api {
         return running_.load();
     }
 
+    Result<void> RequestHandler::enableOptionalElement(std::string_view element) const {
+        if (!isRunning()) {
+            return Result<void>::error("RequestHandler is not running");
+        }
+
+        LOG_INFO("Request: {} {}", __func__, element);
+
+        auto operation = core_->enableOptionalElement(element);
+
+        if (operation.isError()) {
+            LOG_ERROR("Response: {}", operation.error());
+        } else {
+            LOG_INFO("Response: Success");
+        }
+
+        return operation;
+    }
+
+    Result<void> RequestHandler::disableOptionalElement(std::string_view element) const {
+        if (!isRunning()) {
+            return Result<void>::error("RequestHandler is not running");
+        }
+
+        LOG_INFO("Request: {} {}", __func__, element);
+
+        auto operation = core_->disableOptionalElement(element);
+
+        if (operation.isError()) {
+            LOG_ERROR("Response: {}", operation.error());
+        } else {
+            LOG_INFO("Response: Success");
+        }
+
+        return operation;
+    }
+
     void RequestHandler::monitorCore() {
         while (running_.load()) {
             if (!core_ || !core_->isRunning()) {
-                LOG_DEBUG("Core stopped, stopping RequestHandler");
                 if (const auto result = stop(); result.isError()) {
                     LOG_ERROR("Failed to stop RequestHandler: {}", result.error());
                 }

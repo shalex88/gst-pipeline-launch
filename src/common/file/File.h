@@ -7,7 +7,7 @@
 
 class File {
 public:
-    explicit File(const std::string& file_name);
+    explicit File(std::string_view file_name);
     ~File();
     std::string getLine();
     std::vector<std::string> getVectorOfLines();

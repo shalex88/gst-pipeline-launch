@@ -44,4 +44,24 @@ namespace service::api {
 
         return reactor;
     }
+
+    grpc::ServerUnaryReactor* GrpcCallbackHandler::EnableOptionalElement(
+        grpc::CallbackServerContext* context,
+        const video::EnableOptionalElementRequest* request,
+        video::EnableOptionalElementResponse* response) {
+        return handleGrpcRequest(context, request, response,
+            [this](const video::EnableOptionalElementRequest* req, video::EnableOptionalElementResponse* resp) {
+                return request_handler_.enableOptionalElement(req->element());
+            });
+    }
+
+    grpc::ServerUnaryReactor* GrpcCallbackHandler::DisableOptionalElement(
+        grpc::CallbackServerContext* context,
+        const video::DisableOptionalElementRequest* request,
+        video::DisableOptionalElementResponse* response) {
+        return handleGrpcRequest(context, request, response,
+            [this](const video::DisableOptionalElementRequest* req, video::DisableOptionalElementResponse* resp) {
+                return request_handler_.disableOptionalElement(req->element());
+            });
+    }
 }

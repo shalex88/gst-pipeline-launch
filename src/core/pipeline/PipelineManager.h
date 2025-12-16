@@ -13,10 +13,10 @@ public:
     ~PipelineManager();
     std::error_code play();
     std::error_code stop() const;
-    std::error_code enableOptionalPipelineElement(const std::string& element_name);
-    std::error_code disableOptionalPipelineElement(const std::string& element_name);
-    std::error_code enableOptionalPipelineBranch(const std::string& branch_name);
-    std::error_code disableOptionalPipelineBranch(const std::string& branch_name);
+    std::error_code enableOptionalPipelineElement(std::string_view element_name);
+    std::error_code disableOptionalPipelineElement(std::string_view element_name);
+    std::error_code enableOptionalPipelineBranch(std::string_view branch_name);
+    std::error_code disableOptionalPipelineBranch(std::string_view branch_name);
     std::error_code enableAllOptionalPipelineElements();
     std::error_code disableAllOptionalPipelineElements();
     static std::error_code enableAllOptionalPipelineBranches();
@@ -25,8 +25,8 @@ public:
     std::vector<std::string> getOptionalPipelineBranchesNames() const;
 
 private:
-    PipelineElement& findTeeElementForBranch(const std::string& branch_name);
-    PipelineElement& findFirstElementInBranch(const std::string& branch_name);
+    PipelineElement& findTeeElementForBranch(std::string_view branch_name);
+    PipelineElement& findFirstElementInBranch(std::string_view branch_name);
     static GstPad* findLinkedSrcPad(const GstElement* upstream_element, GstElement* downstream_element);
     static GstPad* findGstPadByName(GstElement* element, const std::string& pad_name);
     PipelineElement* findPipelineElementByGstElement(const GstElement* gst_element);
@@ -34,7 +34,7 @@ private:
     void resetPipelineElement(PipelineElement* element) const;
     std::error_code linkGstElement(PipelineElement& current_element);
     std::error_code createGstPipeline(std::vector<PipelineElement>& pipeline);
-    void createElementsList(const std::string& file_path);
+    void createElementsList(std::string_view file_path);
     PipelineElement* getPreviousEnabledElement(const PipelineElement& element);
     PipelineElement* getNextEnabledElement(const PipelineElement& element);
     static std::error_code linkElements(PipelineElement& source, PipelineElement& destination);

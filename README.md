@@ -25,6 +25,7 @@ sudo apt -y install pkg-config bison flex nasm
 - Investigate why the CI run fails when running on Ubuntu 24.04 but does work locally
 - Add cmake presets
 - Add a .deb runtime dependency on gstreamer packages
+- Stopping the app doesn't stop the pipeline thread properly, investigate
 
 ## Build options
 

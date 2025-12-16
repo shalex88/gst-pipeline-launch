@@ -90,7 +90,6 @@ namespace service::api {
     void ApiController::monitorRequestHandler() {
         while (is_running_.load()) {
             if (!request_handler_ || !request_handler_->isRunning()) {
-                LOG_DEBUG("RequestHandler stopped, stopping ApiController");
                 if (const auto result = stop(); result.isError()) {
                     LOG_ERROR("Failed to stop ApiController: {}", result.error());
                 }

@@ -8,7 +8,7 @@
 
 class PipelineParser {
 public:
-    explicit PipelineParser(const std::string& file_name);
+    explicit PipelineParser(std::string_view file_name);
     ~PipelineParser();
     std::vector<PipelineElement> getAllElements() const;
 private:

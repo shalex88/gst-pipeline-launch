@@ -586,7 +586,7 @@ std::error_code PipelineManager::disableAllOptionalPipelineElements() {
     return {};
 }
 
-std::error_code PipelineManager::enableOptionalPipelineElement(const std::string& element_name) {
+std::error_code PipelineManager::enableOptionalPipelineElement(std::string_view element_name) {
     for (auto& element: pipeline_elements_) {
         if (element.name == element_name) {
             if (element.is_initialized && element.is_linked) {
@@ -596,10 +596,10 @@ std::error_code PipelineManager::enableOptionalPipelineElement(const std::string
             return enableOptionalElement(element);
         }
     }
-    return {errno, std::generic_category()};
+    return std::make_error_code(std::errc::invalid_argument);
 }
 
-std::error_code PipelineManager::disableOptionalPipelineElement(const std::string& element_name) {
+std::error_code PipelineManager::disableOptionalPipelineElement(std::string_view element_name) {
     for (auto& element: pipeline_elements_) {
         if (element.name == element_name) {
             if (!element.is_initialized && !element.is_linked) {
@@ -609,13 +609,13 @@ std::error_code PipelineManager::disableOptionalPipelineElement(const std::strin
             return disableOptionalElement(element);
         }
     }
-    return {errno, std::generic_category()};
+    return std::make_error_code(std::errc::invalid_argument);
 }
 
-std::error_code PipelineManager::enableOptionalPipelineBranch(const std::string& branch_name) {
+std::error_code PipelineManager::enableOptionalPipelineBranch(std::string_view branch_name) {
     for (auto& element: pipeline_elements_) {
         if (element.is_optional && !element.is_initialized && !element.is_linked && element.branch == branch_name) {
-            if (auto ec = createGstElement(element)) {
+            if (const auto ec = createGstElement(element)) {
                 return ec;
             }
         }
@@ -632,7 +632,7 @@ std::error_code PipelineManager::enableOptionalPipelineBranch(const std::string&
     return {};
 }
 
-std::error_code PipelineManager::disableOptionalPipelineBranch(const std::string& branch_name) {
+std::error_code PipelineManager::disableOptionalPipelineBranch(std::string_view branch_name) {
     LOG_TRACE("Disabling branch: {}", branch_name);
     auto tee = findTeeElementForBranch(branch_name);
     auto first_element = findFirstElementInBranch(branch_name);
@@ -678,13 +678,13 @@ PipelineElement* PipelineManager::findPipelineElementByGstElement(const GstEleme
     return nullptr;
 }
 
-void PipelineManager::createElementsList(const std::string& file_path) {
+void PipelineManager::createElementsList(std::string_view file_path) {
     const auto pipeline_handler = std::make_unique<PipelineParser>(file_path);
     LOG_DEBUG("Use pipeline from: {}", file_path);
     pipeline_elements_ = pipeline_handler->getAllElements();
 }
 
-PipelineElement& PipelineManager::findTeeElementForBranch(const std::string& branch_name) {
+PipelineElement& PipelineManager::findTeeElementForBranch(std::string_view branch_name) {
     for (auto& element: pipeline_elements_) {
         if (element.name == "tee" && element.is_initialized && element.type == branch_name) {
             return element;
@@ -694,7 +694,7 @@ PipelineElement& PipelineManager::findTeeElementForBranch(const std::string& bra
     throw std::runtime_error("Tee element not found");
 }
 
-PipelineElement& PipelineManager::findFirstElementInBranch(const std::string& branch_name) {
+PipelineElement& PipelineManager::findFirstElementInBranch(std::string_view branch_name) {
     for (auto& element: pipeline_elements_) {
         if (element.branch == branch_name) {
             return element;

@@ -1,8 +1,9 @@
 #include "PipelineParser.h"
+#include "core/pipeline/PipelineParser.h"
 
 #include <utility>
 
-PipelineParser::PipelineParser(const std::string& file_name) : file_(std::make_unique<File>(file_name)) {
+PipelineParser::PipelineParser(std::string_view file_name) : file_(std::make_unique<File>(file_name)) {
     LOG_TRACE("PipelineParser constructor");
 }
 

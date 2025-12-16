@@ -1,7 +1,6 @@
 #pragma once
 
-#include "api/proto/video_service.grpc.pb.h" //TODO: can move to implementation file?
-#include "api/proto/video_service.pb.h"
+#include "api/proto/video_service.grpc.pb.h"
 
 namespace service::api {
     class IRequestHandler;
@@ -9,6 +8,16 @@ namespace service::api {
     class GrpcCallbackHandler final : public video::VideoService::CallbackService {
     public:
         explicit GrpcCallbackHandler(IRequestHandler& request_handler);
+
+        grpc::ServerUnaryReactor* EnableOptionalElement(
+            grpc::CallbackServerContext* context,
+            const video::EnableOptionalElementRequest* request,
+            video::EnableOptionalElementResponse* response) override;
+
+        grpc::ServerUnaryReactor* DisableOptionalElement(
+            grpc::CallbackServerContext* context,
+            const video::DisableOptionalElementRequest* request,
+            video::DisableOptionalElementResponse* response) override;
 
     private:
         IRequestHandler& request_handler_;

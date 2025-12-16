@@ -41,6 +41,32 @@ namespace service::core {
         return is_running_;
     }
 
+    Result<void> Core::enableOptionalElement(std::string_view element) const {
+        if (!isRunning()) {
+            return Result<void>::error("Core is not running");
+        }
+
+        if (const auto ec = pipeline_manager_->enableOptionalPipelineElement(std::string(element))) {
+            LOG_ERROR("Failed to enable optional element {}: {}", element, ec.message());
+            return Result<void>::error("Failed to enable optional element: " + ec.message());
+        }
+
+        return Result<void>::success();
+    }
+
+    Result<void> Core::disableOptionalElement(std::string_view element) const {
+        if (!isRunning()) {
+            return Result<void>::error("Core is not running");
+        }
+
+        if (const auto ec = pipeline_manager_->disableOptionalPipelineElement(std::string(element))) {
+            LOG_ERROR("Failed to disable optional element {}: {}", element, ec.message());
+            return Result<void>::error("Failed to disable optional element: " + ec.message());
+        }
+
+        return Result<void>::success();
+    }
+
     void Core::runPipelineThread() {
         if (pipeline_manager_) {
             if (const auto ec = pipeline_manager_->play()) {

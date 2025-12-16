@@ -20,6 +20,9 @@ namespace service::api {
         Result<void> stop() override;
         bool isRunning() const override;
 
+        Result<void> enableOptionalElement(std::string_view element) const override;
+        Result<void> disableOptionalElement(std::string_view element) const override;
+
     private:
         void monitorCore();
 

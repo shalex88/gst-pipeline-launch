@@ -3,20 +3,20 @@ syntax = "proto3";
 package video;
 
 service VideoService {
-  rpc EnableElement (EnableElementRequest) returns (EnableElementResponse) {}
-  rpc DisableElement (DisableElementRequest) returns (DisableElementResponse) {}
+  rpc EnableOptionalElement (EnableOptionalElementRequest) returns (EnableOptionalElementResponse) {}
+  rpc DisableOptionalElement (DisableOptionalElementRequest) returns (DisableOptionalElementResponse) {}
 }
 
-message EnableElementRequest {
+message EnableOptionalElementRequest {
   string element = 1;
 }
 
-message EnableElementResponse {
+message EnableOptionalElementResponse {
 }
 
-message DisableElementRequest {
+message DisableOptionalElementRequest {
   string element = 1;
 }
 
-message DisableElementResponse {
+message DisableOptionalElementResponse {
 }

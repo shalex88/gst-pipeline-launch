@@ -1,6 +1,6 @@
 #include "File.h"
 
-File::File(const std::string& file_name) : file_(file_name) {
+File::File(std::string_view file_name) : file_(std::string(file_name)) {
     LOG_TRACE("File constructor");
     if (!file_.is_open()) {
         LOG_ERROR("Failed to open file: {}", file_name);

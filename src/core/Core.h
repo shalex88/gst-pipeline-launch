@@ -18,6 +18,9 @@ namespace service::core {
         Result<void> stop() override;
         bool isRunning() const;
 
+        Result<void> enableOptionalElement(std::string_view element) const override;
+        Result<void> disableOptionalElement(std::string_view element) const override;
+
     private:
         void runPipelineThread();
 
