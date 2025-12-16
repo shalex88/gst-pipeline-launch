@@ -1,11 +1,10 @@
-#include <utility>
 #include <sstream>
 #include <unordered_set>
+#include <utility>
 
-#include "core/pipeline/PipelineParser.h"
-#include "core/pipeline/PipelineElement.h"
 #include "core/pipeline/PipelineManager.h"
-
+#include "core/pipeline/PipelineElement.h"
+#include "core/pipeline/PipelineParser.h"
 
 PipelineManager::PipelineManager(std::string pipeline_file) : pipeline_file_(std::move(pipeline_file)) {
     LOG_TRACE("Pipeline constructor");
@@ -48,16 +47,6 @@ std::error_code PipelineManager::linkElements(PipelineElement& source, PipelineE
 
 PipelineManager::~PipelineManager() {
     LOG_TRACE("Pipeline destructor");
-}
-
-std::error_code PipelineManager::enableAllOptionalPipelineBranches() {
-    // TODO: Implement
-    return {};
-}
-
-std::error_code PipelineManager::disableAllOptionalPipelineBranches() {
-    // TODO: Implement
-    return {};
 }
 
 GstPadProbeReturn PipelineManager::connectGstElementProbeCallback(GstPad* pad, GstPadProbeInfo* info, gpointer data) {
@@ -240,7 +229,7 @@ std::error_code PipelineManager::createGstPipeline(std::vector<PipelineElement>&
 }
 
 std::error_code PipelineManager::play() {
-    if (auto ec = createGstPipeline(pipeline_elements_)) {
+    if (const auto ec = createGstPipeline(pipeline_elements_)) {
         LOG_ERROR("Failed to create pipeline: {}", ec.message());
         return ec;
     }
@@ -258,21 +247,22 @@ std::error_code PipelineManager::play() {
     }
 
     // GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(gst_pipeline_.get()), GST_DEBUG_GRAPH_SHOW_ALL, "custom_pipeline");
+    is_running_ = true;
     g_main_loop_run(gst_loop_.get());
 
     return {};
 }
 
-std::error_code PipelineManager::stop() const {
-    if (gst_pipeline_ && gst_loop_) {
-        g_main_loop_quit(gst_loop_.get());
-        gst_element_set_state(gst_pipeline_.get(), GST_STATE_NULL);
-        LOG_DEBUG("Stop playing");
+std::error_code PipelineManager::stop() {
+    if (!isRunning()) {
         return {};
     }
 
-    LOG_WARN("No stream playing");
-    return {errno, std::generic_category()};
+    g_main_loop_quit(gst_loop_.get());
+    gst_element_set_state(gst_pipeline_.get(), GST_STATE_NULL);
+    LOG_DEBUG("Stop playing");
+    is_running_ = false;
+    return {};
 }
 
 gboolean PipelineManager::handlePupelineBusSignal(GstBus*, GstMessage* message, gpointer data) {
@@ -285,7 +275,7 @@ gboolean PipelineManager::handlePupelineBusSignal(GstBus*, GstMessage* message, 
             GError* err;
             gchar* debug;
             gst_message_parse_error(message, &err, &debug);
-            LOG_ERROR("{}", err->message);
+            LOG_DEBUG("{}", err->message); //FIXME: "Quit requested" is interpreted as error
             g_error_free(err);
             g_free(debug);
             return pipeline_manager->stop() ? FALSE : TRUE;
@@ -667,6 +657,10 @@ std::vector<std::string> PipelineManager::getOptionalPipelineBranchesNames() con
         }
     }
     return branches_names;
+}
+
+bool PipelineManager::isRunning() const {
+    return is_running_ && gst_pipeline_ && gst_loop_;
 }
 
 PipelineElement* PipelineManager::findPipelineElementByGstElement(const GstElement* gst_element) {

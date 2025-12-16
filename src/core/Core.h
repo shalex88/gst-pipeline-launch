@@ -16,7 +16,7 @@ namespace service::core {
         // ICore implementation
         Result<void> start() override;
         Result<void> stop() override;
-        bool isRunning() const;
+        bool isRunning() const override;
 
         Result<void> enableOptionalElement(std::string_view element) const override;
         Result<void> disableOptionalElement(std::string_view element) const override;
@@ -26,6 +26,6 @@ namespace service::core {
 
         std::unique_ptr<PipelineManager> pipeline_manager_;
         std::jthread pipeline_thread_;
-        bool is_running_{false};
+        std::atomic<bool> is_running_{false};
     };
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -12,17 +13,16 @@ public:
     explicit PipelineManager(std::string pipeline_file);
     ~PipelineManager();
     std::error_code play();
-    std::error_code stop() const;
+    std::error_code stop();
     std::error_code enableOptionalPipelineElement(std::string_view element_name);
     std::error_code disableOptionalPipelineElement(std::string_view element_name);
     std::error_code enableOptionalPipelineBranch(std::string_view branch_name);
     std::error_code disableOptionalPipelineBranch(std::string_view branch_name);
     std::error_code enableAllOptionalPipelineElements();
     std::error_code disableAllOptionalPipelineElements();
-    static std::error_code enableAllOptionalPipelineBranches();
-    std::error_code disableAllOptionalPipelineBranches();
     std::vector<std::string> getOptionalPipelineElementsNames() const;
     std::vector<std::string> getOptionalPipelineBranchesNames() const;
+    bool isRunning() const;
 
 private:
     PipelineElement& findTeeElementForBranch(std::string_view branch_name);
@@ -65,4 +65,5 @@ private:
     std::string pipeline_file_;
     std::vector<PipelineElement> pipeline_elements_;
     std::mutex mutex_;
+    std::atomic<bool> is_running_{false};
 };

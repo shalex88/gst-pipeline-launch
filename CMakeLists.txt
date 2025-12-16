@@ -35,6 +35,15 @@ file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        $<$<CONFIG:Debug>:-O0 -g>
+        $<$<CONFIG:Release>:-O2>
+        $<$<CONFIG:RelWithDebInfo>:-O2 -g>
+        $<$<CONFIG:MinSizeRel>:-Os>
+    )
+endif()
+
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${SOURCE_DIR}
     ${proto_INCLUDE_DIRS}

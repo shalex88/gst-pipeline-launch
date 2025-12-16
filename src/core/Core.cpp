@@ -31,6 +31,13 @@ namespace service::core {
             return Result<void>::success();
         }
 
+        if (pipeline_manager_) {
+            if (const auto ec = pipeline_manager_->stop()) {
+                LOG_ERROR("Failed to stop pipeline manager: {}", ec.message());
+                return Result<void>::error("Failed to stop pipeline manager: " + ec.message());
+            }
+        }
+
         is_running_ = false;
 
         LOG_DEBUG("Stopped");
@@ -69,12 +76,10 @@ namespace service::core {
 
     void Core::runPipelineThread() {
         if (pipeline_manager_) {
-            if (const auto ec = pipeline_manager_->play()) {
+            if (const auto ec = pipeline_manager_->play()) { // Blocking call
                 LOG_ERROR("Failed to play pipeline {}", ec.message());
             }
-            if (const auto result = stop(); result.isError()) {
-                LOG_ERROR("Failed to stop Core: {}", result.error());
-            }
+            is_running_ = false;
         }
     }
 }
