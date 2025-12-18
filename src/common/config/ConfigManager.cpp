@@ -24,8 +24,8 @@ namespace service::common {
     void CoreConfig::validate() const {
         static const std::set<std::string> valid_cameras{"core"};
 
-        if (camera.empty()) {
-            throw std::runtime_error("Camera type cannot be empty");
+        if (pipeline_path.empty()) {
+            throw std::runtime_error("Pipeliene file path cannot be empty");
         }
     }
 
@@ -43,10 +43,6 @@ namespace service::common {
         }
         if (name.empty()) {
             throw std::runtime_error("App name cannot be empty");
-        }
-
-        if (api_config.server_address == core_config.camera) {
-            throw std::runtime_error("API server address cannot be the same as camera type");
         }
     }
 
@@ -86,8 +82,8 @@ namespace service::common {
 
     void ConfigManager::loadCoreConfig(const YAML::Node& app_node) const {
         if (app_node["core"]) {
-            if (const auto& core_node = app_node["core"]; core_node["camera"]) {
-                app_config_->core_config.camera = core_node["camera"].as<std::string>();
+            if (const auto& core_node = app_node["core"]; core_node["pipeline"]) {
+                app_config_->core_config.pipeline_path = core_node["pipeline"].as<std::string>();
             }
         }
     }

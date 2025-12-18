@@ -4,7 +4,8 @@
 #include "core/pipeline/PipelineManager.h"
 
 namespace service::core {
-    Core::Core() : pipeline_manager_(nullptr) {
+    Core::Core(std::string_view pipeline_path)
+        : pipeline_path_(pipeline_path) {
     }
 
     Core::~Core() {
@@ -17,7 +18,7 @@ namespace service::core {
         LOG_DEBUG("Starting...");
 
         is_running_ = true;
-        pipeline_manager_ = std::make_unique<PipelineManager>("/home/shalex/dev/video-player/config/pipeline.yaml"); //FIXME: hardcoded path
+        pipeline_manager_ = std::make_unique<PipelineManager>(pipeline_path_);
         pipeline_thread_ = std::jthread([this] {
             runPipelineThread();
         });

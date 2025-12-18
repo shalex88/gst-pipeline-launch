@@ -39,7 +39,6 @@ namespace service::app {
 
         app.add_flag("-v,--version", show_version, "Show version information");
         app.add_option("-c,--config", config_file_, "Configuration file path")->check(CLI::ExistingFile);
-        app.add_option("-i,--input", input_file_, "Pipeline file path")->check(CLI::ExistingFile);
 
         try {
             app.parse(argc, argv);

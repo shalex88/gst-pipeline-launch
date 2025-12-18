@@ -10,7 +10,7 @@
 namespace service::core {
     class Core final : public ICore {
     public:
-        Core();
+        explicit Core(std::string_view pipeline_path);
         ~Core() override;
 
         // ICore implementation
@@ -25,6 +25,7 @@ namespace service::core {
         void runPipelineThread();
 
         std::unique_ptr<PipelineManager> pipeline_manager_;
+        std::string pipeline_path_;
         std::jthread pipeline_thread_;
         std::atomic<bool> is_running_{false};
     };

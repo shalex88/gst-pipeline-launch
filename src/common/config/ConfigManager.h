@@ -14,7 +14,7 @@ namespace service::common {
     };
 
     struct CoreConfig {
-        std::string camera;
+        std::string pipeline_path;
 
         void validate() const;
     };
