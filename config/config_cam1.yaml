@@ -5,4 +5,4 @@ app:
     api_type: grpc
     server_address: 0.0.0.0:50051
   core:
-    pipeline: ../config/pipeline.yaml
+    pipeline: config/pipeline_cam1.yaml

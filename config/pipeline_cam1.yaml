@@ -7,6 +7,9 @@ pipeline:
             sensor_id: 3
             sensor_mode: 3
             wbmode: manual
+        - name: myf2f
+          properties:
+            config-path: /opt/project-system/gst-plugins/plugins/gstmyf2f/config/config-nv.yaml
         - name: nvv4l2h264enc
         - name: h264parse
         - name: rtspclientsink
