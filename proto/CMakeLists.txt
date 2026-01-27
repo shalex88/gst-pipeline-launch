@@ -2,7 +2,12 @@ set(PROTO_TARGET proto)
 
 find_package(Protobuf REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
-find_program(GRPC_CPP_PLUGIN grpc_cpp_plugin)
+find_program(GRPC_CPP_PLUGIN grpc_cpp_plugin
+        PATHS "${CMAKE_BINARY_DIR}/vcpkg_installed/x64-linux/tools/grpc"
+        NO_DEFAULT_PATH)
+if(NOT GRPC_CPP_PLUGIN)
+    find_program(GRPC_CPP_PLUGIN grpc_cpp_plugin)
+endif()
 
 set(PROTO_SRC_DIR "${CMAKE_SOURCE_DIR}/proto")
 set(PROTO_OUT_DIR "${CMAKE_BINARY_DIR}/api/proto")
@@ -20,7 +25,7 @@ target_link_libraries(${PROTO_TARGET}
         PUBLIC
         protobuf::libprotobuf
         gRPC::grpc++
-        gRPC::grpc++_reflection
+#        gRPC::grpc++_reflection
 )
 
 target_include_directories(${PROTO_TARGET}

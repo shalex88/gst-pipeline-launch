@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <grpcpp/grpcpp.h>
-#include <grpcpp/ext/proto_server_reflection_plugin.h>
+// #include <grpcpp/ext/proto_server_reflection_plugin.h>
 
 #include "api/GrpcCallbackHandler.h"
 #include "api/IRequestHandler.h"
@@ -26,7 +26,7 @@ namespace service::api {
         //TODO: learn how to use health check
         grpc::EnableDefaultHealthCheckService(false);
         //TODO: disable in production
-        grpc::reflection::InitProtoReflectionServerBuilderPlugin();
+        // grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
         grpc::ServerBuilder builder;
         builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
