@@ -1,0 +1,8 @@
+app:
+  name: video-player-nfov
+  log_level: info
+  api:
+    api_type: grpc
+    server_address: 0.0.0.0:50060
+  core:
+    pipeline: config/pipeline_cam0.yaml

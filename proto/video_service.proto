@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package video.v1;
+
+import "google/protobuf/empty.proto";
+
+service VideoService {
+  rpc GetVideoCapabilities (google.protobuf.Empty) returns (GetVideoCapabilitiesResponse) {}
+  rpc SetVideoCapabilityState (SetVideoCapabilityStateRequest) returns (google.protobuf.Empty) {}
+  rpc GetVideoCapabilityState (GetVideoCapabilityStateRequest) returns (GetVideoCapabilityStateResponse) {}
+}
+
+message SetVideoCapabilityStateRequest {
+  string capability = 1;
+  bool enable = 2; // true/false to enable/disable the capability
+}
+
+message GetVideoCapabilityStateRequest {
+  string capability = 1;
+}
+
+message GetVideoCapabilityStateResponse {
+  bool enable = 1; // true/false to enable/disable the capability
+}
+
+message GetVideoCapabilitiesResponse {
+  repeated string capabilities = 1;
+}

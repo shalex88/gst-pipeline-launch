@@ -31,4 +31,4 @@ jobs:
       run: ./scripts/build.sh native
 
     - name: Run
-      run: cd ./build-native && ./${{steps.repo-name.outputs.name}} -i ../config/pipeline_test.yaml -v
+      run: cd ./build-native && ./${{steps.repo-name.outputs.name}} -c ../config/config.yaml -v

@@ -31,14 +31,14 @@ pipeline:
         - name: nvinfer
           optional: true
           properties:
-            config-file-path: /tmp/project/video-player/config/detector/infer_config.yml
+            config-file-path: /opt/project-system/video-player/config/detector/infer_config.yml
         - name: nvmsgconv
           #FIXME: if enabled by default, but nvinfer is not enabled, it pipeline will fail
           optional: true
           properties:
             comp-id: 0
-            config: /tmp/project/video-player/config/message/msgconv_config.yml
-            debug-payload-dir: /tmp/project/video-player/log/app
+            config: /opt/project-system/video-player/config/message/msgconv_config.yml
+            debug-payload-dir: /opt/project-system/video-player/log/app
             dummy-payload: false
             frame-interval: 1
             msg2p-lib: /opt/nvidia/deepstream/deepstream/lib/libnvds_msgconv.so

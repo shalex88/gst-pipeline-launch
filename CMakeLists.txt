@@ -12,12 +12,14 @@ cmake_minimum_required(VERSION 3.22)
 project(${PROJECT_NAME} LANGUAGES CXX VERSION ${VERSION})
 add_compile_definitions(APP_NAME="${PROJECT_NAME}")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SOURCE_DIR "src")
 set(CONFIG_DIR "config")
+
+add_subdirectory(proto)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-1.0)
@@ -26,21 +28,32 @@ pkg_search_module(GOBJECT REQUIRED IMPORTED_TARGET gobject-2.0)
 pkg_search_module(GMODULE REQUIRED IMPORTED_TARGET gmodule-2.0)
 
 find_package(spdlog CONFIG REQUIRED)
+find_package(CLI11 CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
-find_package(cxxopts CONFIG REQUIRED)
 
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        $<$<CONFIG:Debug>:-O0 -g>
+        $<$<CONFIG:Release>:-O2>
+        $<$<CONFIG:RelWithDebInfo>:-O2 -g>
+        $<$<CONFIG:MinSizeRel>:-Os>
+    )
+endif()
+
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${SOURCE_DIR}
+    ${proto_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    spdlog::spdlog
+    proto
+    spdlog::spdlog_header_only
     yaml-cpp::yaml-cpp
-    cxxopts::cxxopts
+    CLI11::CLI11
     PkgConfig::GSTREAMER
     PkgConfig::GLIB
     PkgConfig::GOBJECT
