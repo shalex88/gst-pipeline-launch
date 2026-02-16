@@ -659,6 +659,15 @@ std::vector<std::string> PipelineManager::getOptionalPipelineBranchesNames() con
     return branches_names;
 }
 
+bool PipelineManager::isOptionalPipelineElementEnabled(std::string_view element_name) const {
+    for (const auto& element: pipeline_elements_) {
+        if (element.name == element_name && element.is_optional) {
+            return element.is_initialized && element.is_linked;
+        }
+    }
+    return false;
+}
+
 bool PipelineManager::isRunning() const {
     return is_running_ && gst_pipeline_ && gst_loop_;
 }

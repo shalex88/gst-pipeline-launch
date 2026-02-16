@@ -75,6 +75,32 @@ namespace service::core {
         return Result<void>::success();
     }
 
+    Result<std::vector<std::string>> Core::getVideoCapabilities() const {
+        if (!isRunning()) {
+            return Result<std::vector<std::string>>::error("Core is not running");
+        }
+
+        if (!pipeline_manager_) {
+            return Result<std::vector<std::string>>::error("Pipeline manager is not initialized");
+        }
+
+        auto capabilities = pipeline_manager_->getOptionalPipelineElementsNames();
+        return Result<std::vector<std::string>>::success(std::move(capabilities));
+    }
+
+    Result<bool> Core::getVideoCapabilityState(std::string_view capability) const {
+        if (!isRunning()) {
+            return Result<bool>::error("Core is not running");
+        }
+
+        if (!pipeline_manager_) {
+            return Result<bool>::error("Pipeline manager is not initialized");
+        }
+
+        const auto enabled = pipeline_manager_->isOptionalPipelineElementEnabled(capability);
+        return Result<bool>::success(enabled);
+    }
+
     void Core::runPipelineThread() {
         if (pipeline_manager_) {
             if (const auto ec = pipeline_manager_->play()) { // Blocking call

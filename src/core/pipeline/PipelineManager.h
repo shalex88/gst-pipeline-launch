@@ -22,6 +22,7 @@ public:
     std::error_code disableAllOptionalPipelineElements();
     std::vector<std::string> getOptionalPipelineElementsNames() const;
     std::vector<std::string> getOptionalPipelineBranchesNames() const;
+    bool isOptionalPipelineElementEnabled(std::string_view element_name) const;
     bool isRunning() const;
 
 private:

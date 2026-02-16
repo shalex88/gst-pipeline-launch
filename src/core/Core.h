@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <thread>
+#include <vector>
 
 #include "common/types/Result.h"
 #include "core/ICore.h"
@@ -20,6 +21,8 @@ namespace service::core {
 
         Result<void> enableOptionalElement(std::string_view element) const override;
         Result<void> disableOptionalElement(std::string_view element) const override;
+        Result<std::vector<std::string>> getVideoCapabilities() const override;
+        Result<bool> getVideoCapabilityState(std::string_view capability) const override;
 
     private:
         void runPipelineThread();

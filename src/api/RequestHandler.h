@@ -2,6 +2,7 @@
 #include <atomic>
 #include <memory>
 #include <thread>
+#include <vector>
 
 #include "api/IRequestHandler.h"
 #include "common/types/Result.h"
@@ -20,8 +21,9 @@ namespace service::api {
         Result<void> stop() override;
         bool isRunning() const override;
 
-        Result<void> enableOptionalElement(std::string_view element) const override;
-        Result<void> disableOptionalElement(std::string_view element) const override;
+        Result<void> setVideoCapability(std::string_view capability, bool enable) const override;
+        Result<std::vector<std::string>> getVideoCapabilities() const override;
+        Result<bool> getVideoCapabilityState(std::string_view capability) const override;
 
     private:
         void monitorCore();

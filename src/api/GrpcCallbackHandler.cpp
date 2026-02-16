@@ -45,23 +45,48 @@ namespace service::api {
         return reactor;
     }
 
-    grpc::ServerUnaryReactor* GrpcCallbackHandler::EnableOptionalElement(
+    grpc::ServerUnaryReactor* GrpcCallbackHandler::SetVideoCapabilityState(
         grpc::CallbackServerContext* context,
-        const video::EnableOptionalElementRequest* request,
-        video::EnableOptionalElementResponse* response) {
+        const video::v1::SetVideoCapabilityStateRequest* request,
+        google::protobuf::Empty* response) {
         return handleGrpcRequest(context, request, response,
-            [this](const video::EnableOptionalElementRequest* req, video::EnableOptionalElementResponse* resp) {
-                return request_handler_.enableOptionalElement(req->element());
+            [this](const video::v1::SetVideoCapabilityStateRequest* req, google::protobuf::Empty* resp) {
+                return request_handler_.setVideoCapability(req->capability(), req->enable());
             });
     }
 
-    grpc::ServerUnaryReactor* GrpcCallbackHandler::DisableOptionalElement(
+    grpc::ServerUnaryReactor* GrpcCallbackHandler::GetVideoCapabilities(
         grpc::CallbackServerContext* context,
-        const video::DisableOptionalElementRequest* request,
-        video::DisableOptionalElementResponse* response) {
+        const google::protobuf::Empty* request,
+        video::v1::GetVideoCapabilitiesResponse* response) {
         return handleGrpcRequest(context, request, response,
-            [this](const video::DisableOptionalElementRequest* req, video::DisableOptionalElementResponse* resp) {
-                return request_handler_.disableOptionalElement(req->element());
+            [this](const google::protobuf::Empty* req, video::v1::GetVideoCapabilitiesResponse* resp) {
+                auto operation = request_handler_.getVideoCapabilities();
+                if (operation.isError()) {
+                    return Result<void>::error(operation.error());
+                }
+
+                for (const auto& capability : operation.value()) {
+                    resp->add_capabilities(capability);
+                }
+
+                return Result<void>::success();
+            });
+    }
+
+    grpc::ServerUnaryReactor* GrpcCallbackHandler::GetVideoCapabilityState(
+        grpc::CallbackServerContext* context,
+        const video::v1::GetVideoCapabilityStateRequest* request,
+        video::v1::GetVideoCapabilityStateResponse* response) {
+        return handleGrpcRequest(context, request, response,
+            [this](const video::v1::GetVideoCapabilityStateRequest* req, video::v1::GetVideoCapabilityStateResponse* resp) {
+                auto operation = request_handler_.getVideoCapabilityState(req->capability());
+                if (operation.isError()) {
+                    return Result<void>::error(operation.error());
+                }
+
+                resp->set_enable(operation.value());
+                return Result<void>::success();
             });
     }
 }

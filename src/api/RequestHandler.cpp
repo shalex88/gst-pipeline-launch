@@ -54,14 +54,16 @@ namespace service::api {
         return running_.load();
     }
 
-    Result<void> RequestHandler::enableOptionalElement(std::string_view element) const {
+    Result<void> RequestHandler::setVideoCapability(std::string_view capability, const bool enable) const {
         if (!isRunning()) {
             return Result<void>::error("RequestHandler is not running");
         }
 
-        LOG_INFO("Request: {} {}", __func__, element);
+        LOG_INFO("Request: {} capability={}, enable={}", __func__, capability, enable);
 
-        auto operation = core_->enableOptionalElement(element);
+        const auto operation = enable
+            ? core_->enableOptionalElement(capability)
+            : core_->disableOptionalElement(capability);
 
         if (operation.isError()) {
             LOG_ERROR("Response: {}", operation.error());
@@ -72,19 +74,37 @@ namespace service::api {
         return operation;
     }
 
-    Result<void> RequestHandler::disableOptionalElement(std::string_view element) const {
+    Result<std::vector<std::string>> RequestHandler::getVideoCapabilities() const {
         if (!isRunning()) {
-            return Result<void>::error("RequestHandler is not running");
+            return Result<std::vector<std::string>>::error("RequestHandler is not running");
         }
 
-        LOG_INFO("Request: {} {}", __func__, element);
+        LOG_INFO("Request: {}", __func__);
 
-        auto operation = core_->disableOptionalElement(element);
+        const auto operation = core_->getVideoCapabilities();
 
         if (operation.isError()) {
             LOG_ERROR("Response: {}", operation.error());
         } else {
-            LOG_INFO("Response: Success");
+            LOG_INFO("Response: Success, capabilities_count={}", operation.value().size());
+        }
+
+        return operation;
+    }
+
+    Result<bool> RequestHandler::getVideoCapabilityState(std::string_view capability) const {
+        if (!isRunning()) {
+            return Result<bool>::error("RequestHandler is not running");
+        }
+
+        LOG_INFO("Request: {} capability={}", __func__, capability);
+
+        const auto operation = core_->getVideoCapabilityState(capability);
+
+        if (operation.isError()) {
+            LOG_ERROR("Response: {}", operation.error());
+        } else {
+            LOG_INFO("Response: Success, enabled={}", operation.value());
         }
 
         return operation;

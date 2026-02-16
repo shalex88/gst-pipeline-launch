@@ -1,22 +1,28 @@
 syntax = "proto3";
 
-package video;
+package video.v1;
+
+import "google/protobuf/empty.proto";
 
 service VideoService {
-  rpc EnableOptionalElement (EnableOptionalElementRequest) returns (EnableOptionalElementResponse) {}
-  rpc DisableOptionalElement (DisableOptionalElementRequest) returns (DisableOptionalElementResponse) {}
+  rpc GetVideoCapabilities (google.protobuf.Empty) returns (GetVideoCapabilitiesResponse) {}
+  rpc SetVideoCapabilityState (SetVideoCapabilityStateRequest) returns (google.protobuf.Empty) {}
+  rpc GetVideoCapabilityState (GetVideoCapabilityStateRequest) returns (GetVideoCapabilityStateResponse) {}
 }
 
-message EnableOptionalElementRequest {
-  string element = 1;
+message SetVideoCapabilityStateRequest {
+  string capability = 1;
+  bool enable = 2; // true/false to enable/disable the capability
 }
 
-message EnableOptionalElementResponse {
+message GetVideoCapabilityStateRequest {
+  string capability = 1;
 }
 
-message DisableOptionalElementRequest {
-  string element = 1;
+message GetVideoCapabilityStateResponse {
+  bool enable = 1; // true/false to enable/disable the capability
 }
 
-message DisableOptionalElementResponse {
+message GetVideoCapabilitiesResponse {
+  repeated string capabilities = 1;
 }
