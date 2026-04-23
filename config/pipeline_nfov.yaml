@@ -1,0 +1,18 @@
+pipeline:
+  branches:
+    - name: main
+      elements:
+        - name: nvarguscamerasrc
+          properties:
+            sensor_id: 0 # /dev/video3, fw_channel 0
+            sensor_mode: 1
+            wbmode: manual
+        - name: myf2f
+          optional: true
+          properties:
+            config-path: /opt/project-system/gst-plugins/plugins/gstmyf2f/config/config-nv.yaml
+        - name: nvv4l2h264enc
+        - name: h264parse
+        - name: rtspclientsink
+          properties:
+            location: rtsp://localhost:8554/camera1

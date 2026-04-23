@@ -96,3 +96,7 @@ All cross-compilation specifics (sysroot, pkg-config paths, and linker flags) ar
 - Currently we send ack on enable_branch command even if connection fails. The cause is an async nature of the connection function. Think about using GST_STATE_CHANGE_ASYNC
 - When one of the elements in a branch is optional, the branch becomes optional even if it's not defined as optional. source: PipelineManager::getOptionalPipelineBranchesNames()
 - nvmsgconv depends on nvinfer. If nvinfer is not enabled and nvmsgconv is, the pipeline will fail. Think about how to handle this. Maybe to allow enable/disable groups of elements
+- [2026-02-23 13:29:50.560] [video-player-wfov] [error] [CORE] Failed to sync 'myf2f config-path=/opt/project-system/gst-plugins/plugins/gstmyf2f/config/config-nv.yaml (main)' state with parent
+[2026-02-23 13:29:50.560] [video-player-wfov] [info] [API] Response: Success
+- 'Failed to open  file: pipeline.yaml' should terminate
+-

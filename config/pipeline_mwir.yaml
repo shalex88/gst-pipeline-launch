@@ -4,8 +4,8 @@ pipeline:
       elements:
         - name: nvarguscamerasrc
           properties:
-            sensor_id: 0
-            sensor_mode: 3
+            sensor_id: 1 # /dev/video2, fw_channel 2
+            sensor_mode: 2
             wbmode: manual
         - name: myf2f
           optional: true
@@ -15,4 +15,4 @@ pipeline:
         - name: h264parse
         - name: rtspclientsink
           properties:
-            location: rtsp://localhost:8554/camera0
+            location: rtsp://localhost:8554/camera2
