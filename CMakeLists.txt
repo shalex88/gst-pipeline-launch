@@ -1,14 +1,15 @@
+cmake_minimum_required(VERSION 3.22)
+
 set(PROJECT_NAME video-player)
 include(cmake/SetVersion.cmake)
-include(cmake/EnableVcpkg.cmake)
 
-if(CMAKE_CROSSCOMPILING)
+if(DEFINED ENV{CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Cross compilation")
 else()
     message(STATUS "Native compilation")
+    include(cmake/EnableVcpkg.cmake)
 endif()
 
-cmake_minimum_required(VERSION 3.22)
 project(${PROJECT_NAME} LANGUAGES CXX VERSION ${VERSION})
 add_compile_definitions(APP_NAME="${PROJECT_NAME}")
 
@@ -30,19 +31,15 @@ pkg_search_module(GMODULE REQUIRED IMPORTED_TARGET gmodule-2.0)
 find_package(spdlog CONFIG REQUIRED)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
+if(TARGET yaml-cpp::yaml-cpp)
+    set(YAML_CPP_TARGET yaml-cpp::yaml-cpp)
+elseif(TARGET yaml-cpp)
+    set(YAML_CPP_TARGET yaml-cpp)
+endif()
 
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:-O0 -g>
-        $<$<CONFIG:Release>:-O2>
-        $<$<CONFIG:RelWithDebInfo>:-O2 -g>
-        $<$<CONFIG:MinSizeRel>:-Os>
-    )
-endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${SOURCE_DIR}
@@ -52,7 +49,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     proto
     spdlog::spdlog_header_only
-    yaml-cpp::yaml-cpp
+    ${YAML_CPP_TARGET}
     CLI11::CLI11
     PkgConfig::GSTREAMER
     PkgConfig::GLIB

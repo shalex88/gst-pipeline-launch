@@ -33,56 +33,18 @@ if [ -z "$BUILD_TYPE" ] || [ "$BUILD_TYPE" != "native" ] && [ "$BUILD_TYPE" != "
     exit 1
 fi
 
+BUILD_MODE=$2
+if [ -z "$BUILD_MODE" ] || [ "$BUILD_MODE" != "debug" ] && [ "$BUILD_MODE" != "release" ]; then
+    echo "Error: Invalid or missing build mode. Use 'debug' or 'release'." >&2
+    exit 1
+fi
+
 if [ "$BUILD_TYPE" == "cross" ]; then
     configure_toolchain
-    # Check if we should use Docker for building
-    if [ "$USE_DOCKER_BUILD" = "1" ]; then
-        RUN_CONTAINER_SCRIPT="$DOCKER_TOOLCHAIN_DIR/run_container.sh"
-        if [ ! -f "$RUN_CONTAINER_SCRIPT" ]; then
-            echo "Error: run_container.sh not found at $RUN_CONTAINER_SCRIPT"
-            exit 1
-        fi
-
-        PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-
-        # Create a temporary script to run inside the container
-        TEMP_SCRIPT="/tmp/docker_build_${BUILD_TYPE}_$$.sh"
-        cat > "$TEMP_SCRIPT" << EOFSCRIPT
-#!/bin/bash -e
-cd /workspace/submodules/orin/video-player
-source /workspace/toolchains/"$TOOLCHAIN_NAME"/env.sh
-# Propagate INSTALL_ROOT if set
-if [ -n "\${INSTALL_ROOT:-}" ]; then
-    export INSTALL_ROOT
-fi
-exec bash scripts/build.sh "$BUILD_TYPE"
-EOFSCRIPT
-        chmod +x "$TEMP_SCRIPT"
-
-        # Run build inside Docker container
-        # Mount the entire project root so all submodules are accessible
-        # Propagate INSTALL_ROOT into the container if set
-        DOCKER_ARGS="-v $PROJECT_ROOT:/workspace -v $TEMP_SCRIPT:/tmp/docker_build.sh -w /workspace/submodules/orin/video-player"
-        if [ -n "${INSTALL_ROOT:-}" ]; then
-            DOCKER_ARGS="$DOCKER_ARGS -e INSTALL_ROOT=$INSTALL_ROOT"
-            echo "Propagating INSTALL_ROOT to container: $INSTALL_ROOT"
-        fi
-        "$RUN_CONTAINER_SCRIPT" \
-            --args "$DOCKER_ARGS" \
-            --exec "/tmp/docker_build.sh"
-
-        BUILD_EXIT=$?
-        rm -f "$TEMP_SCRIPT"
-        exit $BUILD_EXIT
-    fi
 fi
 
-# Use this to prevent installing gstreamer via vcpkg
-if [ "$BUILD_TYPE" == "native" ]; then
-    sudo apt -y install pkg-config libgstreamer1.0-dev
-fi
-
-BUILD_DIR="build-$BUILD_TYPE"
+PRESET="$BUILD_TYPE-$BUILD_MODE"
+BUILD_DIR="$ROOT_DIR/build/$PRESET"
 LOG_FILE="$BUILD_DIR/build.log"
 
 mkdir -p "$BUILD_DIR"
@@ -94,22 +56,20 @@ mkdir -p "$BUILD_DIR"
     else
         echo "Native build"
     fi
+    echo "Using CMake preset: $PRESET"
     echo "Build directory: $BUILD_DIR"
 
-    CMAKE_ARGS=(-G Ninja -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release)
-    
+    CMAKE_ARGS=(--preset "$PRESET")
+
     # Add install prefix if INSTALL_ROOT is set
     if [ -n "${INSTALL_ROOT:-}" ]; then
         CMAKE_ARGS+=(-DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" -DINSTALL_ROOT="$INSTALL_ROOT")
         echo "Install prefix: $INSTALL_ROOT"
     fi
 
-    if [ "$BUILD_TYPE" == "cross" ]; then
-        CMAKE_ARGS+=(-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE" -DVCPKG_TARGET_TRIPLET="$VCPKG_TARGET_TRIPLET")
-        cmake "${CMAKE_ARGS[@]}"
-    else
-        cmake "${CMAKE_ARGS[@]}"
-    fi
+    cd "$ROOT_DIR" || exit 1
+
+    cmake "${CMAKE_ARGS[@]}"
 
     CMAKE_EXIT=$?
     if [ $CMAKE_EXIT -ne 0 ]; then
@@ -118,7 +78,7 @@ mkdir -p "$BUILD_DIR"
         exit $CMAKE_EXIT
     fi
 
-    cmake --build "$BUILD_DIR" -- -j"$(nproc)"
+    cmake --build --preset "$PRESET" --parallel "$(nproc)"
     BUILD_EXIT=$?
     if [ $BUILD_EXIT -ne 0 ]; then
         echo "Build failed with exit code $BUILD_EXIT" >&2
@@ -126,10 +86,10 @@ mkdir -p "$BUILD_DIR"
         exit $BUILD_EXIT
     fi
 
-    cmake --build "$BUILD_DIR" --target package
+    cmake --build --preset "$PRESET" --target package
     BUILD_EXIT=$?
 
-    echo "Build log saved to $PROJECT_ROOT/$LOG_FILE"
+    echo "Build log saved to $LOG_FILE"
     echo "Build completed at $(date)"
     exit $BUILD_EXIT
 } 2>&1 | tee "$LOG_FILE"
